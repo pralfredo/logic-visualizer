@@ -7,6 +7,7 @@ dependencies.** Open it and it runs — including offline.
 
 ---
 ### Link to the Website
+
 https://pralfredo.github.io/logic-visualizer/
 ---
 
