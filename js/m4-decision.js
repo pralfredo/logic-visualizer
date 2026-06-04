@@ -113,9 +113,9 @@
     function mount(stage) {
       LV.clear(stage);
       stage.appendChild(el('div.module-head', null,
-        el('div.kicker', { text: 'Module IV · rational choice' }),
+        el('div.kicker', { text: 'Module VI · rational choice' }),
         el('h2', { text: 'Decision theory — from knowledge to action' }),
-        el('p', { text: 'Once an agent represents the world (Modules I–III), it must choose. Expected-utility theory ranks acts by Σ P(state)·U(act,state). But "probability of what, given what?" splits the field: evidential decision theory conditions on the act; causal decision theory asks only what the act brings about. Newcomb\u2019s problem is where they part ways.' })));
+        el('p', { text: 'Once an agent represents the world (the preceding modules), it must choose. Expected-utility theory ranks acts by Σ P(state)·U(act,state). But "probability of what, given what?" splits the field: evidential decision theory conditions on the act; causal decision theory asks only what the act brings about. Newcomb\u2019s problem is where they part ways.' })));
       var body = el('div.module-body'); stage.appendChild(body);
 
       var g = el('div.grid', { style: { gridTemplateColumns: '1fr' } }); body.appendChild(g);
@@ -133,5 +133,5 @@
     return { mount: mount };
   }
 
-  LV.register({ id: 'decision', no: 'IV', title: 'Decision theory', sub: 'Expected utility · Newcomb', create: mod });
+  LV.register({ id: 'decision', no: 'VI', title: 'Decision theory', sub: 'Expected utility · Newcomb', create: mod });
 })();

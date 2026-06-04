@@ -4,7 +4,7 @@
    marks best responses, finds every pure-strategy Nash equilibrium (a cell
    where neither player can profitably deviate), computes the mixed-strategy
    equilibrium, and flags strictly dominant strategies. This is where the
-   single-agent decision theory of Module IV becomes genuinely strategic:
+   single-agent decision theory of Module VI becomes genuinely strategic:
    the best act now depends on what the other rational agent does.
    ========================================================================= */
 (function () {
@@ -135,7 +135,7 @@
     function mount(stage) {
       LV.clear(stage);
       stage.appendChild(el('div.module-head', null,
-        el('div.kicker', { text: 'Module V · strategic interaction' }),
+        el('div.kicker', { text: 'Module VII · strategic interaction' }),
         el('h2', { text: 'Game theory — Nash equilibrium' }),
         el('p', { text: 'Decision theory asked what a lone agent should do. Now the payoff of your choice depends on another rational agent\u2019s choice, and vice versa. A Nash equilibrium is a profile from which no one can profitably deviate. Edit any payoff, or load a classic game, and watch the best responses and equilibria recompute.' })));
       var body = el('div.module-body'); stage.appendChild(body);
@@ -169,5 +169,5 @@
     return { mount: mount };
   }
 
-  LV.register({ id: 'games', no: 'V', title: 'Game theory', sub: 'Nash equilibrium · best response', create: mod });
+  LV.register({ id: 'games', no: 'VII', title: 'Game theory', sub: 'Nash equilibrium · best response', create: mod });
 })();

@@ -17,7 +17,7 @@
     target.appendChild(el('div.module-head', null,
       el('div.kicker', { text: 'a project in formal epistemology' }),
       el('h2', { text: 'The Architecture of Rational Belief' }),
-      el('p', { text: 'Seven interactive instruments tracing a single question: how does a rational agent represent, update, and act on structured information under uncertainty — and where does that capacity reach its limit? Each module is live; nothing is pre-rendered.' })
+      el('p', { text: 'Nine interactive instruments tracing a single question: how does a rational agent represent, update, and act on structured information under uncertainty — and where does that capacity reach its limit? Each module is live; nothing is pre-rendered.' })
     ));
 
     var body = el('div.module-body');
@@ -26,13 +26,15 @@
     var prose = el('div.prose');
     prose.appendChild(el('p', null,
       el('b', { text: 'The spine. ' }),
-      'We begin with the logic of possibility and knowledge (I), reveal its hidden geometry (II), populate it with many interacting minds (III), turn representation into action (IV), let self-interested agents reach equilibrium (V) and measure the social cost of their selfishness (VI), and finally probe the epistemic boundary — the point at which data can no longer fix meaning or structure (VII). The arc runs from what can be known, through how agents act and interact, to what cannot be inferred at all.'
+      'We lay the foundations — first-order models and the satisfaction relation (I), and the proof theory that derives truths syntactically (II) — then study the logic of possibility and knowledge (III), reveal its hidden geometry (IV), and populate it with many interacting minds (V). From there representation turns into action (VI), self-interested agents reach equilibrium (VII) and we measure the social cost of their selfishness (VIII), before finally probing the epistemic boundary — the point at which data can no longer fix meaning or structure (IX). The arc runs from what can be proved, through how agents act and interact, to what cannot be inferred at all.'
     ));
     body.appendChild(prose);
 
     var grid = el('div.grid.overview-grid');
 
     var blurbs = {
+      fol: 'A first-order structure — domain, constants, predicates, relations — and Tarski’s satisfaction relation. Test any sentence with ∀, ∃, =, and the connectives; open formulas return their satisfying assignments.',
+      nd: 'A Fitch-style natural-deduction proof checker: assumptions open boxes, introduction rules discharge them, and the engine verifies every line, the scope of every citation, and whether the goal is actually proved.',
       kripke: 'Possible-worlds semantics. Build a frame, evaluate □ and ◇ world-by-world, and watch the modal axioms K, T, 4, B, 5 correspond to reflexivity, transitivity, symmetry, and the euclidean property.',
       topology: 'The McKinsey–Tarski theorem: S4 is the logic of topological space, with □ = interior and ◇ = closure. The same logic, now drawn as open sets and boundaries.',
       agents: 'Multi-agent epistemic logic. Indistinguishability relations, common and distributed knowledge, and public-announcement dynamics — the muddy-children puzzle solved by deleting worlds.',
@@ -147,7 +149,7 @@
 
     side.appendChild(toc);
     side.appendChild(el('div.sidebar-foot', {
-      text: 'v5 · responsive · runs offline'
+      text: 'v7 · 9 modules · runs offline'
     }));
   }
 

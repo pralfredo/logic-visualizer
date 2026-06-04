@@ -130,7 +130,7 @@
     function mount(stage) {
       LV.clear(stage);
       stage.appendChild(el('div.module-head', null,
-        el('div.kicker', { text: 'Module II · geometric semantics' }),
+        el('div.kicker', { text: 'Module IV · geometric semantics' }),
         el('h2', { text: 'Topological semantics — S4 as geometry' }),
         el('p', { text: 'The McKinsey–Tarski theorem: S4 is exactly the modal logic of topological spaces, with □ read as topological interior and ◇ as closure. Open sets play the role of "necessity": int A ⊆ A gives axiom T, and int(int A) = int A gives axiom 4. Paint the proposition p over a finite space and watch its interior, closure, and boundary.' })));
       var body = el('div.module-body'); stage.appendChild(body);
@@ -159,7 +159,7 @@
         el('span', { text: 'τ has ' + tau.length + ' open sets (the dashed regions plus all ∪/∩ of them). x₂ is the only point in every open containing 0–2 or 2–4 — the topological "glue".' })));
       col.appendChild(tc);
 
-      var bridge = el('div.card'); bridge.appendChild(el('h4', { text: 'bridge to Module I' }));
+      var bridge = el('div.card'); bridge.appendChild(el('h4', { text: 'bridge to Module III' }));
       bridge.appendChild(el('p.muted', { style: { fontSize: '12.5px' } },
         'Every reflexive-transitive (S4) Kripke frame is an Alexandrov space: let the open sets be the R-upward-closed sets. Then int A = {w : R(w) ⊆ A} = □A and cl A = {w : R(w) ∩ A ≠ ∅} = ◇A. Modal box and topological interior are literally the same operator.'));
       col.appendChild(bridge);
@@ -170,5 +170,5 @@
     return { mount: mount };
   }
 
-  LV.register({ id: 'topology', no: 'II', title: 'Topology', sub: 'Interior = □, closure = ◇', create: mod });
+  LV.register({ id: 'topology', no: 'IV', title: 'Topology', sub: 'Interior = □, closure = ◇', create: mod });
 })();

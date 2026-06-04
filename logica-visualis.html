@@ -549,6 +549,631 @@ canvas{display:block}
 
 })(window);
 
+/* ===== js/m8-fol.js ===== */
+/* ===========================================================================
+   m8-fol.js — First-order logic: models & satisfaction
+   A finite structure M = (domain, interpretation of constants, predicates,
+   relations). The user edits the structure; the engine evaluates any
+   first-order formula with ∀ / ∃ / = / connectives by recursion over the
+   finite domain, reporting truth for closed formulas and the satisfying
+   assignments for open ones. Pure logic lives on LV.fol so it can be tested
+   independently of the DOM.
+   ========================================================================= */
+(function () {
+  'use strict';
+
+  /* ---------------------- pure logic: LV.fol ---------------------- */
+  var fol = {};
+  LV.fol = fol;
+
+  fol.normalize = function (s) {
+    return s
+      .replace(/<->/g, '↔').replace(/<=>/g, '↔')
+      .replace(/->/g, '→').replace(/=>/g, '→')
+      .replace(/\bforall\b/gi, '∀').replace(/\bexists\b/gi, '∃')
+      .replace(/\ball\b/gi, '∀').replace(/\bsome\b/gi, '∃')
+      .replace(/[!~]/g, '¬').replace(/&/g, '∧').replace(/\|/g, '∨');
+  };
+
+  fol.tokenize = function (s) {
+    s = fol.normalize(s);
+    var toks = [], i = 0;
+    while (i < s.length) {
+      var c = s[i];
+      if (/\s/.test(c)) { i++; continue; }
+      if ('()¬∧∨→↔∀∃=,'.indexOf(c) >= 0) { toks.push({ k: c }); i++; continue; }
+      if (/[A-Z]/.test(c)) { toks.push({ k: 'pred', name: c }); i++; continue; }
+      if (/[a-z]/.test(c)) { toks.push({ k: 'term', name: c }); i++; continue; }
+      throw new Error('unexpected "' + c + '"');
+    }
+    return toks;
+  };
+
+  fol.parse = function (str) {
+    var toks = fol.tokenize(str), pos = 0;
+    function peek() { return toks[pos]; }
+    function next() { return toks[pos++]; }
+    function expect(k) { var t = next(); if (!t || t.k !== k) throw new Error('expected ' + k); return t; }
+    function iff() { var a = imp(); while (peek() && peek().k === '↔') { next(); a = { t: 'iff', a: a, b: imp() }; } return a; }
+    function imp() { var a = or(); if (peek() && peek().k === '→') { next(); return { t: 'imp', a: a, b: imp() }; } return a; }
+    function or() { var a = and(); while (peek() && peek().k === '∨') { next(); a = { t: 'or', a: a, b: and() }; } return a; }
+    function and() { var a = un(); while (peek() && peek().k === '∧') { next(); a = { t: 'and', a: a, b: un() }; } return a; }
+    function un() {
+      var t = peek(); if (!t) throw new Error('unexpected end');
+      if (t.k === '¬') { next(); return { t: 'not', a: un() }; }
+      if (t.k === '∀' || t.k === '∃') {
+        next(); var v = expect('term').name; return { t: t.k === '∀' ? 'all' : 'exists', v: v, a: iff() };
+      }
+      return atom();
+    }
+    function term() { var t = expect('term'); return { name: t.name }; }
+    function atom() {
+      var t = peek(); if (!t) throw new Error('unexpected end');
+      if (t.k === '(') { next(); var e = iff(); expect(')'); return e; }
+      if (t.k === 'pred') {
+        next(); expect('('); var args = [term()];
+        while (peek() && peek().k === ',') { next(); args.push(term()); }
+        expect(')'); return { t: 'pred', name: t.name, args: args };
+      }
+      if (t.k === 'term') { var a = term(); expect('='); var b = term(); return { t: 'eq', a: a, b: b }; }
+      throw new Error('unexpected token');
+    }
+    var ast = iff(); if (pos < toks.length) throw new Error('trailing input'); return ast;
+  };
+
+  fol.freeVars = function (ast, M) {
+    var consts = M ? M.consts : {};
+    var out = {};
+    (function walk(n, bound) {
+      if (!n) return;
+      if (n.t === 'pred') { n.args.forEach(function (a) { if (!(a.name in consts) && bound.indexOf(a.name) < 0) out[a.name] = 1; }); return; }
+      if (n.t === 'eq') { [n.a, n.b].forEach(function (a) { if (!(a.name in consts) && bound.indexOf(a.name) < 0) out[a.name] = 1; }); return; }
+      if (n.t === 'all' || n.t === 'exists') { walk(n.a, bound.concat([n.v])); return; }
+      if (n.a) walk(n.a, bound); if (n.b) walk(n.b, bound);
+    })(ast, []);
+    return Object.keys(out).sort();
+  };
+
+  function termVal(t, g, M) { return (t.name in M.consts) ? M.consts[t.name] : g[t.name]; }
+
+  fol.evalUnder = function (ast, g, M) {
+    function ev(n) {
+      switch (n.t) {
+        case 'pred': {
+          var p = M.preds[n.name];
+          if (!p) throw new Error('unknown predicate ' + n.name);
+          if (p.arity !== n.args.length) throw new Error(n.name + ' expects ' + p.arity + ' argument(s)');
+          var vals = n.args.map(function (a) { return termVal(a, g, M); });
+          if (vals.some(function (v) { return v === undefined; })) throw new Error('unbound variable');
+          return p.ext.indexOf(vals.join('|')) >= 0;
+        }
+        case 'eq': return termVal(n.a, g, M) === termVal(n.b, g, M);
+        case 'not': return !ev(n.a);
+        case 'and': return ev(n.a) && ev(n.b);
+        case 'or': return ev(n.a) || ev(n.b);
+        case 'imp': return !ev(n.a) || ev(n.b);
+        case 'iff': return ev(n.a) === ev(n.b);
+        case 'all': return M.domain.every(function (d) { var g2 = Object.assign({}, g); g2[n.v] = d; return fol.evalUnder(n.a, g2, M); });
+        case 'exists': return M.domain.some(function (d) { var g2 = Object.assign({}, g); g2[n.v] = d; return fol.evalUnder(n.a, g2, M); });
+      }
+      throw new Error('bad node ' + n.t);
+    }
+    return ev(ast);
+  };
+
+  fol.satisfy = function (ast, M) {
+    var free = fol.freeVars(ast, M);
+    if (!free.length) return { closed: true, value: fol.evalUnder(ast, {}, M) };
+    var rows = [];
+    (function rec(idx, g) {
+      if (idx === free.length) { if (fol.evalUnder(ast, g, M)) rows.push(Object.assign({}, g)); return; }
+      M.domain.forEach(function (d) { var g2 = Object.assign({}, g); g2[free[idx]] = d; rec(idx + 1, g2); });
+    })(0, {});
+    return { closed: false, free: free, rows: rows };
+  };
+
+  fol.show = function (ast) {
+    function p(n, pr) {
+      var prec = { iff: 1, imp: 2, or: 3, and: 4 };
+      function w(x, s) { return x < pr ? '(' + s + ')' : s; }
+      switch (n.t) {
+        case 'pred': return n.name + '(' + n.args.map(function (a) { return a.name; }).join(',') + ')';
+        case 'eq': return n.a.name + '=' + n.b.name;
+        case 'not': return '¬' + p(n.a, 5);
+        case 'all': return '∀' + n.v + ' ' + p(n.a, 2);
+        case 'exists': return '∃' + n.v + ' ' + p(n.a, 2);
+        case 'and': return w(4, p(n.a, 4) + ' ∧ ' + p(n.b, 4));
+        case 'or': return w(3, p(n.a, 3) + ' ∨ ' + p(n.b, 3));
+        case 'imp': return w(2, p(n.a, 3) + ' → ' + p(n.b, 2));
+        case 'iff': return w(1, p(n.a, 2) + ' ↔ ' + p(n.b, 1));
+      }
+      return '?';
+    }
+    return p(ast, 0);
+  };
+
+  /* ---------------------- UI module ---------------------- */
+  var el = LV.el;
+
+  function defaultModel() {
+    return {
+      domain: ['1', '2', '3', '4'],
+      consts: { a: '1', b: '4' },
+      preds: {
+        P: { arity: 1, ext: ['2', '4'] },              // "even"
+        Q: { arity: 1, ext: ['1'] },                    // "is the first"
+        R: { arity: 2, ext: ['1|2', '1|3', '1|4', '2|3', '2|4', '3|4'] } // "<"
+      }
+    };
+  }
+
+  function mod() {
+    var M = defaultModel(), refs = {}, canvas, ctx;
+
+    function toggleUnary(p, e) { var ext = M.preds[p].ext, i = ext.indexOf(e); if (i >= 0) ext.splice(i, 1); else ext.push(e); refresh(); }
+    function toggleBinary(x, y) { var ext = M.preds.R.ext, k = x + '|' + y, i = ext.indexOf(k); if (i >= 0) ext.splice(i, 1); else ext.push(k); refresh(); }
+
+    function setDomain(n) {
+      M.domain = []; for (var i = 1; i <= n; i++) M.domain.push(String(i));
+      // prune interpretations to current domain
+      ['P', 'Q'].forEach(function (p) { M.preds[p].ext = M.preds[p].ext.filter(function (e) { return M.domain.indexOf(e) >= 0; }); });
+      M.preds.R.ext = M.preds.R.ext.filter(function (k) { var ab = k.split('|'); return M.domain.indexOf(ab[0]) >= 0 && M.domain.indexOf(ab[1]) >= 0; });
+      ['a', 'b'].forEach(function (c) { if (M.domain.indexOf(M.consts[c]) < 0) M.consts[c] = M.domain[0]; });
+      refresh();
+    }
+
+    function evaluate() {
+      var raw = refs.formula.value.trim(); LV.clear(refs.out);
+      if (!raw) return;
+      var ast; try { ast = fol.parse(raw); } catch (e) { refs.out.appendChild(el('span.badge.b-no', { text: '⚠ ' + e.message })); return; }
+      var res;
+      try { res = fol.satisfy(ast, M); } catch (e) { refs.out.appendChild(el('span.badge.b-no', { text: '⚠ ' + e.message })); return; }
+      if (res.closed) {
+        refs.out.appendChild(el('span', { 'class': 'badge ' + (res.value ? 'b-ok' : 'b-no'), text: res.value ? '✓ true in M' : '✗ false in M' }));
+        refs.out.appendChild(el('span.mono', { style: { marginLeft: '10px', fontSize: '12px', color: 'var(--muted)' }, text: fol.show(ast) }));
+      } else {
+        refs.out.appendChild(el('div.mono', { style: { fontSize: '12px', marginBottom: '6px' }, text: 'free variable(s): ' + res.free.join(', ') }));
+        if (!res.rows.length) refs.out.appendChild(el('span.badge.b-no', { text: 'no satisfying assignment' }));
+        else {
+          var t = el('table.tbl');
+          t.appendChild(el('tr', null, ...res.free.map(function (v) { return el('th', { text: v }); }), el('th', { text: 'satisfies?' })));
+          res.rows.forEach(function (g) {
+            t.appendChild(el('tr', null, ...res.free.map(function (v) { return el('td', { text: g[v] }); }), el('td', { 'class': 'tag-ok', text: '✓' })));
+          });
+          refs.out.appendChild(t);
+        }
+      }
+    }
+
+    function refresh() { renderStructure(); evaluate(); draw(); }
+
+    function renderStructure() {
+      var P = refs.struct; LV.clear(P);
+      // domain size control
+      var dn = el('div.btn-row', { style: { marginBottom: '10px' } });
+      dn.appendChild(el('label.lab', { text: 'domain |D| =' }));
+      [2, 3, 4, 5, 6].forEach(function (n) {
+        var b = el('button.btn', { text: String(n) }); if (M.domain.length === n) b.classList.add('active');
+        b.addEventListener('click', function () { setDomain(n); }); dn.appendChild(b);
+      });
+      P.appendChild(dn);
+      // unary predicates table
+      var t = el('table.tbl');
+      t.appendChild(el('tr', null, el('th', { text: 'elem' }), el('th', { text: 'P (unary)' }), el('th', { text: 'Q (unary)' })));
+      M.domain.forEach(function (e) {
+        var row = el('tr', null, el('td', { text: e }));
+        ['P', 'Q'].forEach(function (p) {
+          var cb = el('input', { type: 'checkbox' }); cb.checked = M.preds[p].ext.indexOf(e) >= 0;
+          cb.addEventListener('change', function () { toggleUnary(p, e); });
+          row.appendChild(el('td', null, cb));
+        });
+        t.appendChild(row);
+      });
+      P.appendChild(t);
+      // binary relation R grid
+      P.appendChild(el('h4', { text: 'R(x, y) — binary', style: { marginTop: '12px' } }));
+      var g = el('table.tbl');
+      var head = el('tr', null, el('th', { text: 'x \\ y' }));
+      M.domain.forEach(function (y) { head.appendChild(el('th', { text: y })); });
+      g.appendChild(head);
+      M.domain.forEach(function (x) {
+        var row = el('tr', null, el('th', { text: x }));
+        M.domain.forEach(function (y) {
+          var cb = el('input', { type: 'checkbox' }); cb.checked = M.preds.R.ext.indexOf(x + '|' + y) >= 0;
+          cb.addEventListener('change', function () { toggleBinary(x, y); });
+          row.appendChild(el('td', null, cb));
+        });
+        g.appendChild(row);
+      });
+      P.appendChild(g);
+      // constants
+      P.appendChild(el('h4', { text: 'constants', style: { marginTop: '12px' } }));
+      var cr = el('div.btn-row');
+      ['a', 'b'].forEach(function (c) {
+        var sel = el('select');
+        M.domain.forEach(function (e) { var o = el('option', { value: e, text: e }); if (M.consts[c] === e) o.selected = true; sel.appendChild(o); });
+        sel.addEventListener('change', function () { M.consts[c] = sel.value; refresh(); });
+        cr.appendChild(el('label.lab', { text: c + ' =' })); cr.appendChild(sel);
+      });
+      P.appendChild(cr);
+    }
+
+    function resize() { if (!canvas) return; canvas.width = canvas.parentElement.clientWidth; canvas.height = 300; draw(); }
+    function nodePos(i, n, w, h) { var cx = w / 2, cy = h / 2, r = Math.min(w, h) * 0.34; var ang = -Math.PI / 2 + i * 2 * Math.PI / n; return [cx + r * Math.cos(ang), cy + r * Math.sin(ang)]; }
+    function draw() {
+      if (!ctx) return; var C = LV.theme(), w = canvas.width, h = canvas.height, n = M.domain.length;
+      ctx.clearRect(0, 0, w, h); ctx.fillStyle = C.bg; ctx.fillRect(0, 0, w, h);
+      var pos = M.domain.map(function (_, i) { return nodePos(i, n, w, h); });
+      // R arrows
+      M.preds.R.ext.forEach(function (k) {
+        var ab = k.split('|'), i = M.domain.indexOf(ab[0]), j = M.domain.indexOf(ab[1]); if (i < 0 || j < 0) return;
+        if (i === j) { // self loop
+          var p = pos[i]; ctx.strokeStyle = C.accent3; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(p[0] + 22, p[1] - 22, 12, 0, Math.PI * 2); ctx.stroke(); return;
+        }
+        var a = pos[i], b = pos[j]; var dx = b[0] - a[0], dy = b[1] - a[1], l = Math.hypot(dx, dy), ux = dx / l, uy = dy / l, nx = -uy, ny = ux;
+        var mutual = M.preds.R.ext.indexOf(ab[1] + '|' + ab[0]) >= 0, off = mutual ? 6 : 0;
+        var sx = a[0] + ux * 20 + nx * off, sy = a[1] + uy * 20 + ny * off, ex = b[0] - ux * 20 + nx * off, ey = b[1] - uy * 20 + ny * off;
+        ctx.strokeStyle = C.accent3; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(ex, ey); ctx.stroke();
+        ctx.fillStyle = C.accent3; ctx.beginPath(); ctx.moveTo(ex, ey); ctx.lineTo(ex - ux * 9 + nx * 3.5, ey - uy * 9 + ny * 3.5); ctx.lineTo(ex - ux * 9 - nx * 3.5, ey - uy * 9 - ny * 3.5); ctx.closePath(); ctx.fill();
+      });
+      // nodes
+      M.domain.forEach(function (e, i) {
+        var p = pos[i], inP = M.preds.P.ext.indexOf(e) >= 0, inQ = M.preds.Q.ext.indexOf(e) >= 0;
+        ctx.beginPath(); ctx.arc(p[0], p[1], 20, 0, Math.PI * 2);
+        ctx.fillStyle = inP ? 'rgba(47,44,214,.14)' : C.paper; ctx.fill();
+        ctx.lineWidth = 2; ctx.strokeStyle = inP ? C.accent : C.gold; ctx.stroke();
+        if (inQ) { ctx.beginPath(); ctx.arc(p[0], p[1], 25, 0, Math.PI * 2); ctx.setLineDash([3, 3]); ctx.strokeStyle = C.accent3; ctx.lineWidth = 1.5; ctx.stroke(); ctx.setLineDash([]); }
+        ctx.fillStyle = C.ink; ctx.font = 'bold 14px "IBM Plex Mono", monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(e, p[0], p[1]);
+        // constant labels
+        var cs = Object.keys(M.consts).filter(function (c) { return M.consts[c] === e; });
+        if (cs.length) { ctx.fillStyle = C.accent2; ctx.font = 'bold 12px "IBM Plex Mono"'; ctx.fillText(cs.join(',') + ' →', p[0], p[1] - 30); }
+      });
+      ctx.fillStyle = C.muted; ctx.font = '11px "IBM Plex Mono"'; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+      ctx.fillText('● fill/blue ring = P    ◌ green ring = Q    → = R    red = constant', 14, h - 12);
+    }
+
+    function mount(stage) {
+      LV.clear(stage);
+      stage.appendChild(el('div.module-head', null,
+        el('div.kicker', { text: 'Module I · foundations · semantics' }),
+        el('h2', { text: 'First-order logic — models & satisfaction' }),
+        el('p', { text: 'A first-order structure fixes a domain of individuals and interprets the constants, predicates, and relations of the language. Tarski\u2019s definition of satisfaction then assigns a truth value to every formula by recursion — quantifiers ranging over the domain. Build a structure and test any sentence with ∀, ∃, =, and the connectives; open formulas return their satisfying assignments.' })));
+      var body = el('div.module-body'); stage.appendChild(body);
+
+      var split = el('div.split'); body.appendChild(split);
+      var cwrap = el('div.canvas-card'); canvas = el('canvas'); cwrap.appendChild(canvas); split.appendChild(cwrap); ctx = canvas.getContext('2d');
+
+      var col = el('div.grid', { style: { gridTemplateColumns: '1fr' } }); split.appendChild(col);
+      var fc = el('div.card'); fc.appendChild(el('h4', { text: 'formula' }));
+      refs.formula = el('input', { type: 'text', value: '∀x ∃y R(x,y)', style: { width: '100%' } });
+      var fr = el('div.btn-row'); fr.appendChild(refs.formula);
+      var eb = el('button.btn.primary', { text: 'eval' }); eb.addEventListener('click', evaluate); fr.appendChild(eb);
+      fc.appendChild(fr);
+      var sr = el('div.symrow'); '∀ ∃ ¬ ∧ ∨ → ↔ = ( )'.split(' ').forEach(function (s) { var b = el('button.sym', { text: s }); b.addEventListener('click', function () { refs.formula.value += (s === '∀' || s === '∃') ? s : s; refs.formula.focus(); }); sr.appendChild(b); });
+      fc.appendChild(sr);
+      refs.out = el('div', { style: { marginTop: '10px' } }); fc.appendChild(refs.out);
+      col.appendChild(fc);
+
+      var ex = el('div.card'); ex.appendChild(el('h4', { text: 'examples (click to load)' }));
+      [['∀x ∃y R(x,y)', 'every x relates to some y'],
+       ['∃x ∀y (R(x,y) ∨ x=y)', 'a least element'],
+       ['∀x ∀y (R(x,y) → ¬R(y,x))', 'R is asymmetric'],
+       ['∀x (P(x) → ¬Q(x))', 'no P is a Q'],
+       ['R(a,x)', 'open: which x have a R x?']].forEach(function (e) {
+        var b = el('button.btn', { text: e[0], style: { display: 'block', width: '100%', textAlign: 'left', marginBottom: '5px' } });
+        b.addEventListener('click', function () { refs.formula.value = e[0]; evaluate(); });
+        ex.appendChild(b); ex.appendChild(el('div.muted', { style: { fontSize: '11px', marginTop: '-3px', marginBottom: '6px' }, text: e[1] }));
+      });
+      col.appendChild(ex);
+
+      var sc = el('div.card'); sc.appendChild(el('h4', { text: 'the structure M' })); refs.struct = el('div'); sc.appendChild(refs.struct); col.appendChild(sc);
+
+      window.addEventListener('resize', function () { resize(); });
+      setTimeout(function () { resize(); refresh(); }, 30);
+    }
+    return { mount: mount };
+  }
+
+  LV.register({ id: 'fol', no: 'I', title: 'First-order logic', sub: 'Models · quantifiers · satisfaction', create: mod });
+})();
+
+/* ===== js/m9-nd.js ===== */
+/* ===========================================================================
+   m9-nd.js — Natural deduction (Fitch-style) proof checker
+   Each line carries a formula, a rule, cited line numbers, and a scope depth.
+   Assumptions open boxes; introduction rules discharge them. The checker
+   verifies every line against the rule, enforces scope/accessibility, and
+   reports whether the proof establishes the goal from its premises. The pure
+   checker lives on LV.nd and is tested independently of the DOM.
+   ========================================================================= */
+(function () {
+  'use strict';
+
+  var nd = {};
+  LV.nd = nd;
+
+  function S(ast) { return LV.show(ast); }
+  function isNegOf(x, y) { return x && x.t === 'not' && S(x.a) === S(y); }
+  function prefix(a, b) { if (a.length > b.length) return false; for (var i = 0; i < a.length; i++) if (a[i] !== b[i]) return false; return true; }
+  function arrEq(a, b) { return a.length === b.length && a.every(function (v, i) { return v === b[i]; }); }
+
+  // lines: [{formula, rule, cites:[1-based], depth}]   goalStr optional
+  nd.check = function (lines, goalStr) {
+    var n = lines.length;
+    var F = [], err = [], boxes = [], parseErr = [];
+    // parse
+    for (var i = 0; i < n; i++) {
+      try { F[i] = LV.parse(lines[i].formula); parseErr[i] = null; }
+      catch (e) { F[i] = null; parseErr[i] = e.message; }
+    }
+    // scope pass
+    var stack = []; // open assumption indices
+    var scopeErr = [];
+    for (i = 0; i < n; i++) {
+      var d = lines[i].depth | 0, rule = lines[i].rule;
+      var isAssume = rule === 'assumption';
+      var target = isAssume ? d - 1 : d;
+      if (target < 0) target = 0;
+      while (stack.length > target) stack.pop();
+      if (stack.length < target) { scopeErr[i] = 'indentation jumps too deep'; boxes[i] = stack.slice(); }
+      else {
+        if (isAssume) { boxes[i] = stack.concat([i]); stack.push(i); }
+        else boxes[i] = stack.slice();
+      }
+      if (rule === 'premise' && d !== 0) scopeErr[i] = scopeErr[i] || 'a premise must be at the outermost level';
+    }
+
+    function acc(j, i) { return j < i && j >= 0 && prefix(boxes[j], boxes[i]); }
+    function enclosing(a) { return boxes[a].slice(0, -1); } // boxes around an assumption, excluding its own
+    function inBox(c, a) { return boxes[c].indexOf(a) >= 0; }
+
+    for (i = 0; i < n; i++) {
+      if (parseErr[i]) { err[i] = 'parse error: ' + parseErr[i]; continue; }
+      if (scopeErr[i]) { err[i] = scopeErr[i]; continue; }
+      var L = lines[i], r = L.rule, c = (L.cites || []).map(function (x) { return x - 1; }), e = null;
+      var Ai = F[i];
+      function need(k) { if (c.length !== k) { e = r + ' needs ' + k + ' citation(s)'; return false; } return true; }
+      function valid(idx) { return idx >= 0 && idx < n && F[idx]; }
+      switch (r) {
+        case 'premise': break;
+        case 'assumption': break;
+        case 'reit':
+          if (!need(1)) break;
+          if (!acc(c[0], i)) { e = 'cited line not in scope'; break; }
+          if (S(Ai) !== S(F[c[0]])) e = 'reiteration must copy the cited line';
+          break;
+        case 'andI':
+          if (!need(2)) break;
+          if (!acc(c[0], i) || !acc(c[1], i)) { e = 'cited line not in scope'; break; }
+          if (Ai.t !== 'and' || S(Ai.a) !== S(F[c[0]]) || S(Ai.b) !== S(F[c[1]])) e = 'expected (cite1) ∧ (cite2)';
+          break;
+        case 'andE':
+          if (!need(1)) break;
+          if (!acc(c[0], i)) { e = 'cited line not in scope'; break; }
+          if (F[c[0]].t !== 'and') { e = 'cited line is not a conjunction'; break; }
+          if (S(Ai) !== S(F[c[0]].a) && S(Ai) !== S(F[c[0]].b)) e = 'must be one conjunct of the cited line';
+          break;
+        case 'orI':
+          if (!need(1)) break;
+          if (!acc(c[0], i)) { e = 'cited line not in scope'; break; }
+          if (Ai.t !== 'or' || (S(Ai.a) !== S(F[c[0]]) && S(Ai.b) !== S(F[c[0]]))) e = 'cited line must be a disjunct of the result';
+          break;
+        case 'impE':
+          if (!need(2)) break;
+          if (!acc(c[0], i) || !acc(c[1], i)) { e = 'cited line not in scope'; break; }
+          var imp = F[c[0]].t === 'imp' ? F[c[0]] : F[c[1]], ant = F[c[0]].t === 'imp' ? F[c[1]] : F[c[0]];
+          if (imp.t !== 'imp') { e = 'no conditional among the cited lines'; break; }
+          if (S(ant) !== S(imp.a) || S(Ai) !== S(imp.b)) e = 'modus ponens does not fit';
+          break;
+        case 'notE':
+          if (!need(2)) break;
+          if (!acc(c[0], i) || !acc(c[1], i)) { e = 'cited line not in scope'; break; }
+          if (Ai.t !== 'bot') { e = 'the result of ¬E must be ⊥'; break; }
+          if (!(isNegOf(F[c[0]], F[c[1]]) || isNegOf(F[c[1]], F[c[0]]))) e = 'cited lines are not a formula and its negation';
+          break;
+        case 'botE':
+          if (!need(1)) break;
+          if (!acc(c[0], i)) { e = 'cited line not in scope'; break; }
+          if (F[c[0]].t !== 'bot') e = '⊥E must cite a line that is ⊥';
+          break;
+        case 'impI':
+          if (!need(2)) break; // [assumption, conclusion]
+          var a = c[0], cc = c[1];
+          if (!valid(a) || lines[a].rule !== 'assumption') { e = 'first citation must be an assumption'; break; }
+          if (!arrEq(enclosing(a), boxes[i])) { e = 'the assumption box is not the one being discharged here'; break; }
+          if (!inBox(cc, a)) { e = 'second citation must lie inside the assumption box'; break; }
+          if (Ai.t !== 'imp' || S(Ai.a) !== S(F[a]) || S(Ai.b) !== S(F[cc])) e = 'result must be (assumption) → (conclusion)';
+          break;
+        case 'notI':
+          if (!need(2)) break;
+          var a2 = c[0], c2 = c[1];
+          if (!valid(a2) || lines[a2].rule !== 'assumption') { e = 'first citation must be an assumption'; break; }
+          if (!arrEq(enclosing(a2), boxes[i])) { e = 'wrong assumption box for ¬I'; break; }
+          if (!inBox(c2, a2)) { e = 'second citation must be inside the box'; break; }
+          if (F[c2].t !== 'bot') { e = 'the box must end in ⊥'; break; }
+          if (Ai.t !== 'not' || S(Ai.a) !== S(F[a2])) e = 'result must be ¬(assumption)';
+          break;
+        case 'raa':
+          if (!need(2)) break;
+          var a3 = c[0], c3 = c[1];
+          if (!valid(a3) || lines[a3].rule !== 'assumption') { e = 'first citation must be an assumption'; break; }
+          if (F[a3].t !== 'not') { e = 'reductio assumes a negation ¬φ'; break; }
+          if (!arrEq(enclosing(a3), boxes[i])) { e = 'wrong assumption box for RAA'; break; }
+          if (!inBox(c3, a3)) { e = 'second citation must be inside the box'; break; }
+          if (F[c3].t !== 'bot') { e = 'the box must end in ⊥'; break; }
+          if (S(Ai) !== S(F[a3].a)) e = 'result must be φ (where the assumption was ¬φ)';
+          break;
+        case 'orE':
+          if (!need(5)) break; // [disj, assume1, concl1, assume2, concl2]
+          var dj = c[0], aA = c[1], cA = c[2], aB = c[3], cB = c[4];
+          if (!acc(dj, i) || F[dj].t !== 'or') { e = 'first citation must be a disjunction in scope'; break; }
+          if (lines[aA].rule !== 'assumption' || lines[aB].rule !== 'assumption') { e = 'citations 2 and 4 must be assumptions'; break; }
+          if (S(F[aA]) !== S(F[dj].a) || S(F[aB]) !== S(F[dj].b)) { e = 'the two assumptions must be the two disjuncts'; break; }
+          if (!arrEq(enclosing(aA), boxes[i]) || !arrEq(enclosing(aB), boxes[i])) { e = 'both case-boxes must discharge here'; break; }
+          if (!inBox(cA, aA) || !inBox(cB, aB)) { e = 'each conclusion must be inside its case-box'; break; }
+          if (S(Ai) !== S(F[cA]) || S(Ai) !== S(F[cB])) e = 'both cases must conclude the result';
+          break;
+        default: e = 'unknown rule';
+      }
+      err[i] = e;
+    }
+
+    // does it prove the goal?
+    var allOk = err.every(function (x) { return !x; });
+    var lastDepth0 = n > 0 && lines[n - 1].depth === 0 && (boxes[n - 1] || []).length === 0;
+    var proves = false, goalAst = null;
+    if (goalStr) { try { goalAst = LV.parse(goalStr); } catch (e2) { } }
+    if (allOk && lastDepth0 && goalAst && F[n - 1]) proves = S(F[n - 1]) === S(goalAst);
+    var premises = lines.filter(function (l) { return l.rule === 'premise'; }).map(function (l) { return l.formula; });
+    return { errors: err, boxes: boxes, allOk: allOk, proves: proves, premises: premises };
+  };
+
+  /* ---------------------- UI ---------------------- */
+  var el = LV.el;
+  var RULES = [
+    ['premise', 'Premise'], ['assumption', 'Assumption'], ['reit', 'Reiteration'],
+    ['andI', '∧I'], ['andE', '∧E'], ['orI', '∨I'], ['orE', '∨E (5 cites)'],
+    ['impI', '→I (discharge)'], ['impE', '→E (MP)'],
+    ['notE', '¬E'], ['notI', '¬I (discharge)'], ['botE', '⊥E'], ['raa', 'RAA (¬φ⊢⊥ ⟹ φ)']
+  ];
+
+  var EXAMPLES = {
+    'p → p': [
+      { formula: 'p', rule: 'assumption', cites: [], depth: 1 },
+      { formula: 'p → p', rule: 'impI', cites: [1, 1], depth: 0 }
+    ],
+    '(p ∧ q) → (q ∧ p)': [
+      { formula: 'p ∧ q', rule: 'assumption', cites: [], depth: 1 },
+      { formula: 'p', rule: 'andE', cites: [1], depth: 1 },
+      { formula: 'q', rule: 'andE', cites: [1], depth: 1 },
+      { formula: 'q ∧ p', rule: 'andI', cites: [3, 2], depth: 1 },
+      { formula: '(p ∧ q) → (q ∧ p)', rule: 'impI', cites: [1, 4], depth: 0 }
+    ],
+    '¬(p ∧ ¬p)': [
+      { formula: 'p ∧ ¬p', rule: 'assumption', cites: [], depth: 1 },
+      { formula: 'p', rule: 'andE', cites: [1], depth: 1 },
+      { formula: '¬p', rule: 'andE', cites: [1], depth: 1 },
+      { formula: '⊥', rule: 'notE', cites: [2, 3], depth: 1 },
+      { formula: '¬(p ∧ ¬p)', rule: 'notI', cites: [1, 4], depth: 0 }
+    ],
+    '¬¬p ⊢ p (classical)': [
+      { formula: '¬¬p', rule: 'premise', cites: [], depth: 0 },
+      { formula: '¬p', rule: 'assumption', cites: [], depth: 1 },
+      { formula: '⊥', rule: 'notE', cites: [1, 2], depth: 1 },
+      { formula: 'p', rule: 'raa', cites: [2, 3], depth: 0 }
+    ]
+  };
+
+  function mod() {
+    var refs = {}, lines = JSON.parse(JSON.stringify(EXAMPLES['(p ∧ q) → (q ∧ p)'])), goal = '(p ∧ q) → (q ∧ p)';
+
+    function render() {
+      var pane = refs.proof; LV.clear(pane);
+      lines.forEach(function (L, i) {
+        var rowOk = null;
+        var row = el('div', { style: { display: 'flex', gap: '6px', alignItems: 'center', marginBottom: '4px' } });
+        row.appendChild(el('span.mono', { style: { width: '22px', color: 'var(--muted)', fontSize: '12px', textAlign: 'right' }, text: String(i + 1) }));
+        // indentation (Fitch boxes)
+        var indent = el('div', { style: { display: 'flex' } });
+        for (var b = 0; b < L.depth; b++) indent.appendChild(el('span', { style: { width: '14px', alignSelf: 'stretch', borderLeft: '2px solid var(--accent)', marginLeft: '2px' } }));
+        row.appendChild(indent);
+        // depth controls
+        var minus = el('button.btn', { text: '⊟', style: { padding: '2px 6px' } }); minus.addEventListener('click', function () { L.depth = Math.max(0, L.depth - 1); render(); });
+        var plus = el('button.btn', { text: '⊞', style: { padding: '2px 6px' } }); plus.addEventListener('click', function () { L.depth = L.depth + 1; render(); });
+        row.appendChild(minus); row.appendChild(plus);
+        // formula
+        var fin = el('input', { type: 'text', value: L.formula, style: { width: '150px', fontSize: '13px' } });
+        fin.addEventListener('input', function () { L.formula = fin.value; });
+        row.appendChild(fin);
+        // rule
+        var sel = el('select', { style: { fontSize: '12px' } });
+        RULES.forEach(function (r) { var o = el('option', { value: r[0], text: r[1] }); if (L.rule === r[0]) o.selected = true; sel.appendChild(o); });
+        sel.addEventListener('change', function () { L.rule = sel.value; });
+        row.appendChild(sel);
+        // cites
+        var cin = el('input', { type: 'text', value: (L.cites || []).join(','), placeholder: 'lines', style: { width: '74px', fontSize: '12px' } });
+        cin.addEventListener('input', function () { L.cites = cin.value.split(',').map(function (x) { return parseInt(x.trim(), 10); }).filter(function (x) { return !isNaN(x); }); });
+        row.appendChild(cin);
+        // delete
+        var del = el('button.btn', { text: '×', style: { padding: '2px 7px' } }); del.addEventListener('click', function () { lines.splice(i, 1); render(); });
+        row.appendChild(del);
+        // status
+        refs.statusCells = refs.statusCells || {};
+        var st = el('span', { style: { width: '20px', textAlign: 'center', fontWeight: '700' } }); st.dataset.line = i; row.appendChild(st);
+        pane.appendChild(row);
+      });
+      var add = el('button.btn', { text: '+ line', style: { marginTop: '8px' } });
+      add.addEventListener('click', function () { lines.push({ formula: '', rule: 'reit', cites: [], depth: lines.length ? lines[lines.length - 1].depth : 0 }); render(); });
+      pane.appendChild(add);
+    }
+
+    function doCheck() {
+      var res = nd.check(lines, refs.goal.value.trim());
+      // annotate status per row
+      var rows = refs.proof.querySelectorAll('span[data-line]');
+      rows.forEach(function (st) {
+        var i = +st.dataset.line, e = res.errors[i];
+        st.textContent = e ? '✗' : '✓';
+        st.style.color = e ? 'var(--accent2)' : 'var(--accent3)';
+        st.title = e || 'ok';
+      });
+      LV.clear(refs.verdict);
+      // list any errors
+      var errs = res.errors.map(function (e, i) { return e ? (i + 1) + ': ' + e : null; }).filter(Boolean);
+      if (errs.length) {
+        refs.verdict.appendChild(el('span.badge.b-no', { text: errs.length + ' line(s) need fixing' }));
+        var ul = el('div', { style: { marginTop: '6px' } });
+        errs.forEach(function (m) { ul.appendChild(el('div.mono', { style: { fontSize: '11.5px', color: 'var(--accent2)' }, text: '• line ' + m })); });
+        refs.verdict.appendChild(ul);
+      } else {
+        refs.verdict.appendChild(el('span', { 'class': 'badge ' + (res.proves ? 'b-ok' : 'b-warn'),
+          text: res.proves ? '✓ valid proof — establishes the goal' : '✓ every line checks; final line does not match the goal (or undischarged assumptions remain)' }));
+        if (res.premises.length) refs.verdict.appendChild(el('p.muted', { style: { fontSize: '12px', marginTop: '6px' }, text: 'from premises: ' + res.premises.join(', ') }));
+      }
+    }
+
+    function load(name) { lines = JSON.parse(JSON.stringify(EXAMPLES[name])); goal = name.replace(/ ⊢.*| \(classical\)/, ''); refs.goal.value = goal === '¬¬p' ? 'p' : goal; render(); LV.clear(refs.verdict); }
+
+    function mount(stage) {
+      LV.clear(stage);
+      stage.appendChild(el('div.module-head', null,
+        el('div.kicker', { text: 'Module II · foundations · proof theory' }),
+        el('h2', { text: 'Natural deduction — a proof checker' }),
+        el('p', { text: 'Where Module I gives meaning (semantics), this gives derivation (syntax). Build a Fitch-style proof: assumptions open boxes drawn as vertical rules, and introduction rules discharge them. The checker validates every line against its rule, enforces that citations stay in scope, and reports whether the proof actually establishes the goal.' })));
+      var body = el('div.module-body'); stage.appendChild(body);
+
+      var ex = el('div.btn-row', { style: { marginBottom: '14px' } });
+      ex.appendChild(el('span.mono', { style: { fontSize: '11px', color: 'var(--muted)' }, text: 'load:' }));
+      Object.keys(EXAMPLES).forEach(function (k) { var b = el('button.btn', { text: k }); b.addEventListener('click', function () { load(k); }); ex.appendChild(b); });
+      body.appendChild(ex);
+
+      var goalRow = el('div.btn-row', { style: { marginBottom: '12px' } });
+      goalRow.appendChild(el('label.lab', { text: 'goal:' }));
+      refs.goal = el('input', { type: 'text', value: goal, style: { width: '260px' } });
+      goalRow.appendChild(refs.goal);
+      var chk = el('button.btn.primary', { text: '✓ check proof' }); chk.addEventListener('click', doCheck); goalRow.appendChild(chk);
+      body.appendChild(goalRow);
+
+      var card = el('div.card');
+      card.appendChild(el('h4', { text: 'proof  ·  ⊞/⊟ set box depth · cite line numbers comma-separated' }));
+      refs.proof = el('div', { style: { fontFamily: 'var(--mono)' } }); card.appendChild(refs.proof);
+      body.appendChild(card);
+
+      refs.verdict = el('div', { style: { marginTop: '14px' } }); body.appendChild(refs.verdict);
+
+      body.appendChild(el('div.card', { style: { marginTop: '18px' } },
+        el('h4', { text: 'rules' }),
+        el('p.muted', { style: { fontSize: '12px' } },
+          'Discharge rules (→I, ¬I, RAA, ∨E) cite an assumption line and a line inside its box. For →I cite [assumption, conclusion]; for ¬I and RAA cite [assumption, the ⊥ line]; for ∨E cite [disjunction, assume-left, concl-left, assume-right, concl-right]. Type ⊥ for absurdity (or load an example to see the shapes).')));
+
+      render(); doCheck();
+    }
+    return { mount: mount };
+  }
+
+  LV.register({ id: 'nd', no: 'II', title: 'Natural deduction', sub: 'Fitch proofs · scope · discharge', create: mod });
+})();
+
 /* ===== js/m1-kripke.js ===== */
 /* ===========================================================================
    m1-kripke.js — Possible-worlds semantics
@@ -777,7 +1402,7 @@ canvas{display:block}
     function mount(stage) {
       LV.clear(stage);
       stage.appendChild(el('div.module-head', null,
-        el('div.kicker', { text: 'Module I · relational semantics' }),
+        el('div.kicker', { text: 'Module III · relational semantics' }),
         el('h2', { text: 'Kripke models, modal & epistemic logic' }),
         el('p', { text: 'A model is a set of possible worlds, an accessibility relation, and a valuation. □φ holds at w iff φ holds at every accessible world; ◇φ iff at some. Reading the relation as an agent\u2019s indistinguishability gives epistemic logic, where □ becomes "the agent knows".' })));
 
@@ -906,7 +1531,7 @@ canvas{display:block}
   }
 
   LV.register({
-    id: 'kripke', no: 'I', title: 'Kripke models',
+    id: 'kripke', no: 'III', title: 'Kripke models',
     sub: 'Modal · epistemic · S4 / S5',
     create: mod
   });
@@ -1045,7 +1670,7 @@ canvas{display:block}
     function mount(stage) {
       LV.clear(stage);
       stage.appendChild(el('div.module-head', null,
-        el('div.kicker', { text: 'Module II · geometric semantics' }),
+        el('div.kicker', { text: 'Module IV · geometric semantics' }),
         el('h2', { text: 'Topological semantics — S4 as geometry' }),
         el('p', { text: 'The McKinsey–Tarski theorem: S4 is exactly the modal logic of topological spaces, with □ read as topological interior and ◇ as closure. Open sets play the role of "necessity": int A ⊆ A gives axiom T, and int(int A) = int A gives axiom 4. Paint the proposition p over a finite space and watch its interior, closure, and boundary.' })));
       var body = el('div.module-body'); stage.appendChild(body);
@@ -1074,7 +1699,7 @@ canvas{display:block}
         el('span', { text: 'τ has ' + tau.length + ' open sets (the dashed regions plus all ∪/∩ of them). x₂ is the only point in every open containing 0–2 or 2–4 — the topological "glue".' })));
       col.appendChild(tc);
 
-      var bridge = el('div.card'); bridge.appendChild(el('h4', { text: 'bridge to Module I' }));
+      var bridge = el('div.card'); bridge.appendChild(el('h4', { text: 'bridge to Module III' }));
       bridge.appendChild(el('p.muted', { style: { fontSize: '12.5px' } },
         'Every reflexive-transitive (S4) Kripke frame is an Alexandrov space: let the open sets be the R-upward-closed sets. Then int A = {w : R(w) ⊆ A} = □A and cl A = {w : R(w) ∩ A ≠ ∅} = ◇A. Modal box and topological interior are literally the same operator.'));
       col.appendChild(bridge);
@@ -1085,7 +1710,7 @@ canvas{display:block}
     return { mount: mount };
   }
 
-  LV.register({ id: 'topology', no: 'II', title: 'Topology', sub: 'Interior = □, closure = ◇', create: mod });
+  LV.register({ id: 'topology', no: 'IV', title: 'Topology', sub: 'Interior = □, closure = ◇', create: mod });
 })();
 
 /* ===== js/m3-agents.js ===== */
@@ -1251,7 +1876,7 @@ canvas{display:block}
     function mount(stage) {
       LV.clear(stage);
       stage.appendChild(el('div.module-head', null,
-        el('div.kicker', { text: 'Module III · multi-agent epistemics' }),
+        el('div.kicker', { text: 'Module V · multi-agent epistemics' }),
         el('h2', { text: 'AI agent foundations — knowledge among many minds' }),
         el('p', { text: 'Each agent has its own indistinguishability relation; Kᵢφ means agent i knows φ. Common knowledge Cφ ("everyone knows that everyone knows…") is the closure that makes coordination possible, and a public announcement φ! updates the model by deleting worlds where φ is false. These are the primitives behind protocol reasoning, mechanism design, and multi-agent RL.' })));
       var body = el('div.module-body'); stage.appendChild(body);
@@ -1311,7 +1936,7 @@ canvas{display:block}
     return { mount: mount };
   }
 
-  LV.register({ id: 'agents', no: 'III', title: 'Agent foundations', sub: 'Common knowledge · announcements', create: mod });
+  LV.register({ id: 'agents', no: 'V', title: 'Agent foundations', sub: 'Common knowledge · announcements', create: mod });
 })();
 
 /* ===== js/m4-decision.js ===== */
@@ -1430,9 +2055,9 @@ canvas{display:block}
     function mount(stage) {
       LV.clear(stage);
       stage.appendChild(el('div.module-head', null,
-        el('div.kicker', { text: 'Module IV · rational choice' }),
+        el('div.kicker', { text: 'Module VI · rational choice' }),
         el('h2', { text: 'Decision theory — from knowledge to action' }),
-        el('p', { text: 'Once an agent represents the world (Modules I–III), it must choose. Expected-utility theory ranks acts by Σ P(state)·U(act,state). But "probability of what, given what?" splits the field: evidential decision theory conditions on the act; causal decision theory asks only what the act brings about. Newcomb\u2019s problem is where they part ways.' })));
+        el('p', { text: 'Once an agent represents the world (the preceding modules), it must choose. Expected-utility theory ranks acts by Σ P(state)·U(act,state). But "probability of what, given what?" splits the field: evidential decision theory conditions on the act; causal decision theory asks only what the act brings about. Newcomb\u2019s problem is where they part ways.' })));
       var body = el('div.module-body'); stage.appendChild(body);
 
       var g = el('div.grid', { style: { gridTemplateColumns: '1fr' } }); body.appendChild(g);
@@ -1450,7 +2075,7 @@ canvas{display:block}
     return { mount: mount };
   }
 
-  LV.register({ id: 'decision', no: 'IV', title: 'Decision theory', sub: 'Expected utility · Newcomb', create: mod });
+  LV.register({ id: 'decision', no: 'VI', title: 'Decision theory', sub: 'Expected utility · Newcomb', create: mod });
 })();
 
 /* ===== js/m6-games.js ===== */
@@ -1460,7 +2085,7 @@ canvas{display:block}
    marks best responses, finds every pure-strategy Nash equilibrium (a cell
    where neither player can profitably deviate), computes the mixed-strategy
    equilibrium, and flags strictly dominant strategies. This is where the
-   single-agent decision theory of Module IV becomes genuinely strategic:
+   single-agent decision theory of Module VI becomes genuinely strategic:
    the best act now depends on what the other rational agent does.
    ========================================================================= */
 (function () {
@@ -1591,7 +2216,7 @@ canvas{display:block}
     function mount(stage) {
       LV.clear(stage);
       stage.appendChild(el('div.module-head', null,
-        el('div.kicker', { text: 'Module V · strategic interaction' }),
+        el('div.kicker', { text: 'Module VII · strategic interaction' }),
         el('h2', { text: 'Game theory — Nash equilibrium' }),
         el('p', { text: 'Decision theory asked what a lone agent should do. Now the payoff of your choice depends on another rational agent\u2019s choice, and vice versa. A Nash equilibrium is a profile from which no one can profitably deviate. Edit any payoff, or load a classic game, and watch the best responses and equilibria recompute.' })));
       var body = el('div.module-body'); stage.appendChild(body);
@@ -1625,7 +2250,7 @@ canvas{display:block}
     return { mount: mount };
   }
 
-  LV.register({ id: 'games', no: 'V', title: 'Game theory', sub: 'Nash equilibrium · best response', create: mod });
+  LV.register({ id: 'games', no: 'VII', title: 'Game theory', sub: 'Nash equilibrium · best response', create: mod });
 })();
 
 /* ===== js/m7-agt.js ===== */
@@ -1748,7 +2373,7 @@ canvas{display:block}
     function mount(stage) {
       LV.clear(stage);
       stage.appendChild(el('div.module-head', null,
-        el('div.kicker', { text: 'Module VI · the cost of selfishness' }),
+        el('div.kicker', { text: 'Module VIII · the cost of selfishness' }),
         el('h2', { text: 'Algorithmic game theory — the price of anarchy' }),
         el('p', { text: 'When self-interested agents share a network, their Nash equilibrium can be strictly worse than what a central planner would choose. The ratio between the two is the price of anarchy. Two classic instances show it — including Braess\u2019s paradox, where building a new road makes everyone slower.' })));
       var body = el('div.module-body'); stage.appendChild(body);
@@ -1782,7 +2407,7 @@ canvas{display:block}
     return { mount: mount };
   }
 
-  LV.register({ id: 'agt', no: 'VI', title: 'Algorithmic game theory', sub: 'Price of anarchy · Braess', create: mod });
+  LV.register({ id: 'agt', no: 'VIII', title: 'Algorithmic game theory', sub: 'Price of anarchy · Braess', create: mod });
 })();
 
 /* ===== js/m5-grammar.js ===== */
@@ -1922,7 +2547,7 @@ canvas{display:block}
     function mount(stage) {
       LV.clear(stage);
       stage.appendChild(el('div.module-head', null,
-        el('div.kicker', { text: 'Module V · learning & meaning' }),
+        el('div.kicker', { text: 'Module IX · learning & meaning' }),
         el('h2', { text: 'Gavagai → full grammar' }),
         el('p', { text: 'A native says "gavagai" as a rabbit darts past. What does the word mean? Quine\u2019s point is that no amount of pointing settles it. The same underdetermination is provable for grammar: from finitely many example sentences, several grammars always remain consistent. Convergence requires either negative evidence or a built-in inductive bias — the formal shadow of innate structure.' })));
       var body = el('div.module-body'); stage.appendChild(body);
@@ -1987,7 +2612,7 @@ canvas{display:block}
     return { mount: mount };
   }
 
-  LV.register({ id: 'grammar', no: 'VII', title: 'Gavagai → grammar', sub: 'Indeterminacy · Gold\u2019s theorem', create: mod });
+  LV.register({ id: 'grammar', no: 'IX', title: 'Gavagai → grammar', sub: 'Indeterminacy · Gold\u2019s theorem', create: mod });
 })();
 
 /* ===== js/app.js ===== */
@@ -2010,7 +2635,7 @@ canvas{display:block}
     target.appendChild(el('div.module-head', null,
       el('div.kicker', { text: 'a project in formal epistemology' }),
       el('h2', { text: 'The Architecture of Rational Belief' }),
-      el('p', { text: 'Seven interactive instruments tracing a single question: how does a rational agent represent, update, and act on structured information under uncertainty — and where does that capacity reach its limit? Each module is live; nothing is pre-rendered.' })
+      el('p', { text: 'Nine interactive instruments tracing a single question: how does a rational agent represent, update, and act on structured information under uncertainty — and where does that capacity reach its limit? Each module is live; nothing is pre-rendered.' })
     ));
 
     var body = el('div.module-body');
@@ -2019,13 +2644,15 @@ canvas{display:block}
     var prose = el('div.prose');
     prose.appendChild(el('p', null,
       el('b', { text: 'The spine. ' }),
-      'We begin with the logic of possibility and knowledge (I), reveal its hidden geometry (II), populate it with many interacting minds (III), turn representation into action (IV), let self-interested agents reach equilibrium (V) and measure the social cost of their selfishness (VI), and finally probe the epistemic boundary — the point at which data can no longer fix meaning or structure (VII). The arc runs from what can be known, through how agents act and interact, to what cannot be inferred at all.'
+      'We lay the foundations — first-order models and the satisfaction relation (I), and the proof theory that derives truths syntactically (II) — then study the logic of possibility and knowledge (III), reveal its hidden geometry (IV), and populate it with many interacting minds (V). From there representation turns into action (VI), self-interested agents reach equilibrium (VII) and we measure the social cost of their selfishness (VIII), before finally probing the epistemic boundary — the point at which data can no longer fix meaning or structure (IX). The arc runs from what can be proved, through how agents act and interact, to what cannot be inferred at all.'
     ));
     body.appendChild(prose);
 
     var grid = el('div.grid.overview-grid');
 
     var blurbs = {
+      fol: 'A first-order structure — domain, constants, predicates, relations — and Tarski’s satisfaction relation. Test any sentence with ∀, ∃, =, and the connectives; open formulas return their satisfying assignments.',
+      nd: 'A Fitch-style natural-deduction proof checker: assumptions open boxes, introduction rules discharge them, and the engine verifies every line, the scope of every citation, and whether the goal is actually proved.',
       kripke: 'Possible-worlds semantics. Build a frame, evaluate □ and ◇ world-by-world, and watch the modal axioms K, T, 4, B, 5 correspond to reflexivity, transitivity, symmetry, and the euclidean property.',
       topology: 'The McKinsey–Tarski theorem: S4 is the logic of topological space, with □ = interior and ◇ = closure. The same logic, now drawn as open sets and boundaries.',
       agents: 'Multi-agent epistemic logic. Indistinguishability relations, common and distributed knowledge, and public-announcement dynamics — the muddy-children puzzle solved by deleting worlds.',
@@ -2140,7 +2767,7 @@ canvas{display:block}
 
     side.appendChild(toc);
     side.appendChild(el('div.sidebar-foot', {
-      text: 'v6 · single-file · runs offline'
+      text: 'v7 · 9 modules · runs offline'
     }));
   }
 

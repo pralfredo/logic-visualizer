@@ -134,7 +134,7 @@
     function mount(stage) {
       LV.clear(stage);
       stage.appendChild(el('div.module-head', null,
-        el('div.kicker', { text: 'Module V · learning & meaning' }),
+        el('div.kicker', { text: 'Module IX · learning & meaning' }),
         el('h2', { text: 'Gavagai → full grammar' }),
         el('p', { text: 'A native says "gavagai" as a rabbit darts past. What does the word mean? Quine\u2019s point is that no amount of pointing settles it. The same underdetermination is provable for grammar: from finitely many example sentences, several grammars always remain consistent. Convergence requires either negative evidence or a built-in inductive bias — the formal shadow of innate structure.' })));
       var body = el('div.module-body'); stage.appendChild(body);
@@ -199,5 +199,5 @@
     return { mount: mount };
   }
 
-  LV.register({ id: 'grammar', no: 'VII', title: 'Gavagai → grammar', sub: 'Indeterminacy · Gold\u2019s theorem', create: mod });
+  LV.register({ id: 'grammar', no: 'IX', title: 'Gavagai → grammar', sub: 'Indeterminacy · Gold\u2019s theorem', create: mod });
 })();

@@ -160,7 +160,7 @@
     function mount(stage) {
       LV.clear(stage);
       stage.appendChild(el('div.module-head', null,
-        el('div.kicker', { text: 'Module III · multi-agent epistemics' }),
+        el('div.kicker', { text: 'Module V · multi-agent epistemics' }),
         el('h2', { text: 'AI agent foundations — knowledge among many minds' }),
         el('p', { text: 'Each agent has its own indistinguishability relation; Kᵢφ means agent i knows φ. Common knowledge Cφ ("everyone knows that everyone knows…") is the closure that makes coordination possible, and a public announcement φ! updates the model by deleting worlds where φ is false. These are the primitives behind protocol reasoning, mechanism design, and multi-agent RL.' })));
       var body = el('div.module-body'); stage.appendChild(body);
@@ -220,5 +220,5 @@
     return { mount: mount };
   }
 
-  LV.register({ id: 'agents', no: 'III', title: 'Agent foundations', sub: 'Common knowledge · announcements', create: mod });
+  LV.register({ id: 'agents', no: 'V', title: 'Agent foundations', sub: 'Common knowledge · announcements', create: mod });
 })();

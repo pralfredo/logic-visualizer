@@ -225,7 +225,7 @@
     function mount(stage) {
       LV.clear(stage);
       stage.appendChild(el('div.module-head', null,
-        el('div.kicker', { text: 'Module I · relational semantics' }),
+        el('div.kicker', { text: 'Module III · relational semantics' }),
         el('h2', { text: 'Kripke models, modal & epistemic logic' }),
         el('p', { text: 'A model is a set of possible worlds, an accessibility relation, and a valuation. □φ holds at w iff φ holds at every accessible world; ◇φ iff at some. Reading the relation as an agent\u2019s indistinguishability gives epistemic logic, where □ becomes "the agent knows".' })));
 
@@ -354,7 +354,7 @@
   }
 
   LV.register({
-    id: 'kripke', no: 'I', title: 'Kripke models',
+    id: 'kripke', no: 'III', title: 'Kripke models',
     sub: 'Modal · epistemic · S4 / S5',
     create: mod
   });

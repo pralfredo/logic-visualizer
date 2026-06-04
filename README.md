@@ -7,9 +7,6 @@ server: **open `index.html` in any modern browser** (double-click works).
 
 ---
 
-## Link to the Website
-https://pralfredo.github.io/logic-visualizer/
-
 ## The intellectual spine
 
 Every module answers one part of a single question:
@@ -19,13 +16,15 @@ Every module answers one part of a single question:
 
 | # | Module | Question it answers |
 |---|--------|---------------------|
-| I | **Kripke models** | What does it mean for something to be *necessary* or *known*? |
-| II | **Topology** | What is the hidden *geometry* of that same logic? |
-| III | **Agent foundations** | How is something known *together*, among many minds? |
-| IV | **Decision theory** | How does knowing turn into *acting*? |
-| V | **Game theory** | What is rational when another rational agent reacts to you? |
-| VI | **Algorithmic game theory** | What does selfishness cost the group? |
-| VII | **Gavagai → grammar** | What *cannot* be inferred from data at all? |
+| I | **First-order logic** | What makes a sentence *true in a structure*? |
+| II | **Natural deduction** | How is a truth *derived*, step by step? |
+| III | **Kripke models** | What does it mean for something to be *necessary* or *known*? |
+| IV | **Topology** | What is the hidden *geometry* of that same logic? |
+| V | **Agent foundations** | How is something known *together*, among many minds? |
+| VI | **Decision theory** | How does knowing turn into *acting*? |
+| VII | **Game theory** | What is rational when another rational agent reacts to you? |
+| VIII | **Algorithmic game theory** | What does selfishness cost the group? |
+| IX | **Gavagai → grammar** | What *cannot* be inferred from data at all? |
 
 The recurring motif is **correspondence**: modal axioms ↔ frame properties (I),
 modal operators ↔ topological operators (II), knowledge ↔ reachability (III),
@@ -35,6 +34,19 @@ probability ↔ value (IV), and hypothesis ↔ prior (V). The same structural id
 ---
 
 ## Modules
+
+### I · First-order logic — models & satisfaction
+Build a finite first-order structure (domain, constants, unary/binary predicates) and test any
+sentence with ∀, ∃, =, and the connectives. Tarski's satisfaction relation is evaluated by
+recursion over the domain; closed sentences get a truth value, open formulas return the
+assignments that satisfy them. The relational structure is drawn live.
+
+### II · Natural deduction — a proof checker
+A Fitch-style proof editor and checker for classical propositional logic. Assumptions open boxes
+(drawn as vertical rules); introduction rules discharge them. The checker validates every line
+against its rule (∧I/E, ∨I/E, →I/E, ¬I/E, ⊥E, RAA, reiteration), enforces that every citation is
+in scope, and reports whether the goal is actually proved from the premises. This is the
+proof-theoretic counterpart to Module I's semantics.
 
 ### I · Kripke models — modal & epistemic logic
 Build a frame on the canvas (add worlds, draw the accessibility relation, set
@@ -115,6 +127,8 @@ logic-visualizer/
 └── js/
     ├── core.js           # LV namespace, module registry, formula parser,
     │                     #   generic evaluator, relation algebra
+    ├── m8-fol.js          # Module I  (also exposes LV.fol)
+    ├── m9-nd.js           # Module II (also exposes LV.nd)
     ├── m1-kripke.js       # Module I
     ├── m2-topology.js     # Module II
     ├── m3-agents.js       # Module III

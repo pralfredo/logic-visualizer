@@ -117,7 +117,7 @@
     function mount(stage) {
       LV.clear(stage);
       stage.appendChild(el('div.module-head', null,
-        el('div.kicker', { text: 'Module VI · the cost of selfishness' }),
+        el('div.kicker', { text: 'Module VIII · the cost of selfishness' }),
         el('h2', { text: 'Algorithmic game theory — the price of anarchy' }),
         el('p', { text: 'When self-interested agents share a network, their Nash equilibrium can be strictly worse than what a central planner would choose. The ratio between the two is the price of anarchy. Two classic instances show it — including Braess\u2019s paradox, where building a new road makes everyone slower.' })));
       var body = el('div.module-body'); stage.appendChild(body);
@@ -151,5 +151,5 @@
     return { mount: mount };
   }
 
-  LV.register({ id: 'agt', no: 'VI', title: 'Algorithmic game theory', sub: 'Price of anarchy · Braess', create: mod });
+  LV.register({ id: 'agt', no: 'VIII', title: 'Algorithmic game theory', sub: 'Price of anarchy · Braess', create: mod });
 })();
