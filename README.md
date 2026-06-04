@@ -7,6 +7,9 @@ server: **open `index.html` in any modern browser** (double-click works).
 
 ---
 
+## Link to the Website
+https://pralfredo.github.io/logic-visualizer/
+
 ## The intellectual spine
 
 Every module answers one part of a single question:
