@@ -1,0 +1,2197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Logica Visualis</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,900;1,9..144,500&family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+  <style>
+/* ===========================================================================
+   style.css — "modern editorial" design system
+   High-contrast ink & light, electric cobalt / vermilion / emerald accents.
+   Type: Fraunces (display) · Space Grotesk (body/UI) · IBM Plex Mono (formulae)
+   ========================================================================= */
+:root{
+  --ink:#15171c; --paper:#ecebe6; --parchment:#ffffff; --warm:#e2e1d9;
+  --accent:#2f2cd6;   /* electric cobalt */
+  --accent2:#e23b2e;  /* vermilion       */
+  --accent3:#0e8a5f;  /* emerald         */
+  --gold:#bf8410;     /* amber           */
+  --rule:#d8d6cd; --muted:#6a6c66;
+  --serif:'Fraunces','Georgia',serif;
+  --body:'Space Grotesk',system-ui,-apple-system,sans-serif;
+  --mono:'IBM Plex Mono','SFMono-Regular',monospace;
+  --r:7px; --rl:13px;
+  --sidebar:252px;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --ink:#eef0f4; --paper:#0e1014; --parchment:#16181e; --warm:#222530;
+    --accent:#8482ff; --accent2:#ff6a5a; --accent3:#3fc78f; --gold:#e0b250;
+    --rule:#2a2d36; --muted:#9a9da6;
+  }
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  font-family:var(--body); background:var(--paper); color:var(--ink);
+  font-size:15px; line-height:1.6; -webkit-font-smoothing:antialiased;
+  font-feature-settings:"ss01","cv05";
+}
+h1,h2,h3,h4{font-family:var(--serif);font-weight:600;line-height:1.1;letter-spacing:-.01em;
+  font-variation-settings:"opsz" 80,"SOFT" 30}
+a{color:var(--accent);text-decoration:none}
+code,.mono{font-family:var(--mono)}
+
+/* ---- dashing polish (overrides a few base looks; vars above re-theme all) -- */
+.brand{position:relative}
+.brand::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;
+  background:linear-gradient(90deg,var(--accent),var(--accent2))}
+.brand h1{font-weight:900;font-size:21px;letter-spacing:-.02em;
+  font-variation-settings:"opsz" 144,"SOFT" 0,"WONK" 1}
+.module-head .kicker{font-weight:600;color:var(--accent2)}
+.module-head h2{font-size:33px;font-weight:900;
+  font-variation-settings:"opsz" 144,"SOFT" 0,"WONK" 1}
+.nav-item .ni-no{font-weight:600}
+.nav-item.active{border-left-width:4px}
+.card{box-shadow:0 1px 2px rgba(0,0,0,.04)}
+.badge{letter-spacing:.01em}
+.btn.primary,.btn.active{box-shadow:0 1px 0 rgba(0,0,0,.15)}
+
+
+/* ---- shell -------------------------------------------------------------- */
+.shell{display:grid;grid-template-columns:var(--sidebar) 1fr;height:100vh;overflow:hidden}
+
+/* ---- sidebar ------------------------------------------------------------ */
+.sidebar{
+  background:var(--parchment);border-right:1px solid var(--rule);
+  display:flex;flex-direction:column;overflow-y:auto;
+}
+.brand{padding:22px 20px 16px;border-bottom:1px solid var(--rule)}
+.brand h1{font-size:19px;color:var(--accent);letter-spacing:-.4px}
+.brand .tag{font-family:var(--mono);font-size:10.5px;color:var(--muted);margin-top:6px;letter-spacing:.04em}
+.toc{padding:10px 0;flex:1}
+.toc .label{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);padding:10px 20px 6px}
+.nav-item{
+  display:flex;flex-direction:column;gap:1px;padding:9px 20px;cursor:pointer;
+  border-left:3px solid transparent;transition:background .12s;
+}
+.nav-item:hover{background:var(--warm)}
+.nav-item.active{background:var(--warm);border-left-color:var(--accent)}
+.nav-item .ni-no{font-family:var(--mono);font-size:10px;color:var(--gold)}
+.nav-item .ni-title{font-family:var(--serif);font-size:15px;font-weight:700}
+.nav-item.active .ni-title{color:var(--accent)}
+.nav-item .ni-sub{font-size:11.5px;color:var(--muted);line-height:1.35}
+.sidebar-foot{padding:14px 20px;border-top:1px solid var(--rule);font-size:11px;color:var(--muted);font-family:var(--mono)}
+
+/* ---- stage -------------------------------------------------------------- */
+.stage{overflow-y:auto;height:100vh}
+.module-head{padding:26px 36px 18px;border-bottom:1px solid var(--rule);background:var(--parchment)}
+.module-head .kicker{font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--gold);text-transform:uppercase}
+.module-head h2{font-size:28px;margin:6px 0 8px;letter-spacing:-.5px}
+.module-head p{color:var(--muted);max-width:70ch;font-size:14.5px}
+.module-body{padding:24px 36px 60px}
+
+/* ---- generic panels & cards -------------------------------------------- */
+.grid{display:grid;gap:20px}
+.card{background:var(--parchment);border:1px solid var(--rule);border-radius:var(--rl);padding:18px 20px}
+.card h3{font-size:15px;margin-bottom:12px;color:var(--accent)}
+.card h4{font-size:13px;font-family:var(--mono);font-weight:500;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:8px}
+.muted{color:var(--muted)}
+.prose{max-width:72ch}
+.prose p{margin-bottom:12px}
+.prose b{color:var(--accent)}
+
+/* ---- controls ----------------------------------------------------------- */
+button.btn,.btn{
+  font-family:var(--mono);font-size:12px;padding:6px 13px;border:1px solid var(--rule);
+  border-radius:var(--r);background:var(--paper);color:var(--ink);cursor:pointer;transition:all .13s;
+}
+.btn:hover{background:var(--warm)}
+.btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.btn.primary:hover{opacity:.88}
+.btn.active{background:var(--accent2);color:#fff;border-color:var(--accent2)}
+.btn-row{display:flex;gap:7px;flex-wrap:wrap;align-items:center}
+
+input[type=text],input[type=number],select{
+  font-family:var(--mono);font-size:13px;background:var(--paper);color:var(--ink);
+  border:1px solid var(--rule);border-radius:var(--r);padding:7px 10px;
+}
+input[type=text]:focus,input[type=number]:focus,select:focus{outline:none;border-color:var(--accent)}
+input[type=range]{accent-color:var(--accent);width:100%}
+label.lab{font-family:var(--mono);font-size:11.5px;color:var(--muted)}
+
+.symrow{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.sym{font-family:var(--mono);font-size:14px;padding:3px 8px;border:1px solid var(--rule);border-radius:5px;background:var(--paper);cursor:pointer;color:var(--ink)}
+.sym:hover{background:var(--warm)}
+
+/* ---- badges ------------------------------------------------------------- */
+.badge{display:inline-block;padding:2px 9px;border-radius:12px;font-family:var(--mono);font-size:11px;font-weight:600}
+.b-ok{background:rgba(31,92,61,.16);color:var(--accent3)}
+.b-no{background:rgba(124,44,44,.16);color:var(--accent2)}
+.b-info{background:rgba(39,64,110,.14);color:var(--accent)}
+.b-warn{background:rgba(169,121,27,.18);color:var(--gold)}
+.tag-ok{color:var(--accent3);font-weight:600}
+.tag-no{color:var(--accent2);font-weight:600}
+
+/* ---- tables ------------------------------------------------------------- */
+table.tbl{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:12.5px}
+table.tbl th{text-align:left;padding:5px 9px;border-bottom:1px solid var(--rule);color:var(--muted);font-weight:500}
+table.tbl td{padding:5px 9px;border-bottom:1px solid var(--rule)}
+table.tbl tr:last-child td{border-bottom:none}
+
+/* ---- canvas wrap -------------------------------------------------------- */
+.canvas-card{background:var(--paper);border:1px solid var(--rule);border-radius:var(--rl);overflow:hidden;position:relative}
+canvas{display:block}
+.tooltip{position:absolute;background:var(--parchment);border:1px solid var(--rule);border-radius:6px;padding:5px 9px;font-family:var(--mono);font-size:11px;pointer-events:none;opacity:0;transition:opacity .12s;z-index:5}
+
+/* ---- axiom list --------------------------------------------------------- */
+.axiom{display:flex;align-items:flex-start;gap:9px;padding:7px 10px;border:1px solid var(--rule);border-radius:7px;background:var(--paper);margin-bottom:6px}
+.axiom .name{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--accent);min-width:22px}
+.axiom .f{font-family:var(--mono);font-size:12.5px;flex:1}
+.axiom .st{margin-left:auto}
+
+/* ---- two-col layouts ---------------------------------------------------- */
+.split{display:grid;grid-template-columns:1fr 320px;gap:20px;align-items:start}
+@media (max-width:1080px){.split{grid-template-columns:1fr}}
+.split-even{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}
+@media (max-width:900px){.split-even{grid-template-columns:1fr}}
+
+/* hypotheses / grammar list */
+.hyp{display:flex;align-items:center;gap:10px;padding:8px 12px;border:1px solid var(--rule);border-radius:8px;margin-bottom:7px;background:var(--paper)}
+.hyp .h-name{font-family:var(--serif);font-weight:700;font-size:14px}
+.hyp .h-desc{font-size:12px;color:var(--muted)}
+.hyp.dead{opacity:.4}
+.hyp.dead .h-name{text-decoration:line-through}
+.hyp.best{border-color:var(--accent);border-width:2px}
+
+.chip{display:inline-block;font-family:var(--mono);font-size:11px;padding:2px 8px;border-radius:6px;background:var(--warm);color:var(--ink);margin:2px}
+.chip.pos{background:rgba(31,92,61,.16);color:var(--accent3)}
+.chip.neg{background:rgba(124,44,44,.16);color:var(--accent2)}
+
+/* bars */
+.bar-track{height:14px;background:var(--warm);border-radius:7px;overflow:hidden}
+.bar-fill{height:100%;background:var(--accent);transition:width .25s}
+.bar-fill.win{background:var(--accent3)}
+
+/* ===========================================================================
+   Responsive layout — desktop is the DEFAULT (.shell grid above); a single
+   mobile breakpoint turns the sidebar into an off-canvas drawer. No competing
+   !important blocks, so wide screens always get the grid.
+   ========================================================================= */
+
+/* hamburger button: hidden on desktop, shown only in the mobile drawer rules */
+.menu-toggle{ display:none; }
+
+/* overview cards */
+.overview-grid{
+  display:grid;
+  grid-template-columns:repeat(3, minmax(220px, 1fr));
+  gap:22px;
+  margin-top:20px;
+}
+@media (max-width:1100px){
+  .overview-grid{ grid-template-columns:repeat(2, minmax(220px, 1fr)); }
+}
+
+/* ---- mobile drawer (phones / narrow windows) --------------------------- */
+@media (max-width:820px){
+  html,body{ overflow-x:hidden; }
+
+  .shell{ display:block; height:auto; min-height:100vh; overflow:visible; }
+
+  .stage{ height:auto; min-height:100vh; overflow:visible; padding-top:64px; width:100%; }
+
+  .sidebar{
+    position:fixed; top:0; left:0; bottom:0;
+    width:min(86vw, 320px); z-index:9998;
+    background:var(--parchment);
+    box-shadow:4px 0 26px rgba(0,0,0,.3);
+    transform:translateX(-105%);
+    transition:transform .25s ease;
+  }
+  body.menu-open .sidebar{ transform:translateX(0); }
+
+  /* dim backdrop behind the open drawer (drawn on the toggle button's ::after-free body) */
+  body.menu-open .stage::before{
+    content:''; position:fixed; inset:0; background:rgba(0,0,0,.42); z-index:9997;
+  }
+
+  .menu-toggle{
+    display:inline-flex; align-items:center; justify-content:center;
+    position:fixed; top:12px; left:12px; z-index:10000;
+    width:46px; height:46px; font-size:20px; cursor:pointer;
+    font-family:var(--mono);
+    background:var(--parchment); color:var(--ink);
+    border:1px solid var(--rule); border-radius:11px;
+    box-shadow:0 2px 12px rgba(0,0,0,.22);
+  }
+
+  .overview-grid{ grid-template-columns:1fr; }
+  .module-head{ padding:60px 18px 16px; }
+  .module-head h2{ font-size:21px; letter-spacing:-.3px; overflow-wrap:break-word; }
+  .module-head p{ font-size:13.5px; }
+  .module-body{ padding:18px 16px 70px; }
+  .split, .split-even{ grid-template-columns:1fr; }
+  canvas{ max-width:100%; }
+}
+
+/* scene (gavagai) */
+.scene{position:relative;background:var(--paper);border:1px solid var(--rule);border-radius:var(--rl);min-height:200px;padding:16px;display:flex;align-items:center;justify-content:center;gap:30px;flex-wrap:wrap}
+.utterance{font-family:var(--serif);font-style:italic;font-size:26px;color:var(--accent2)}
+
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:var(--rule);border-radius:5px}
+::-webkit-scrollbar-track{background:transparent}
+
+  </style>
+</head>
+<body>
+  <button id="menuToggle" class="menu-toggle" aria-label="Toggle menu">☰</button>
+  <div class="shell">
+    <aside class="sidebar" id="sidebar"></aside>
+    <main class="stage" id="stage"></main>
+  </div>
+  <script>
+/* ===== js/core.js ===== */
+/* ===========================================================================
+   core.js — shared engine for the Interactive Logic Visualizer
+   - global namespace LV
+   - module registry + router hooks
+   - modal/epistemic formula parser (-> AST)
+   - generic AST evaluator parameterised by a "frame interpretation"
+   - small DOM helper
+   No build step, no ES modules: loads as a classic <script> so the project
+   runs directly from file:// by double-clicking index.html.
+   ========================================================================= */
+(function (global) {
+  'use strict';
+
+  var LV = global.LV || {};
+  global.LV = LV;
+
+  /* ---- module registry ---------------------------------------------------- */
+  LV.modules = LV.modules || [];
+  LV.register = function (def) { LV.modules.push(def); };
+
+  /* ---- tiny DOM helper ---------------------------------------------------- */
+  // el('div.card#main', {onclick:fn}, child, child...)
+  LV.el = function (sel, attrs) {
+    var parts = sel.split(/(?=[.#])/);
+    var tag = parts[0] && parts[0][0] !== '.' && parts[0][0] !== '#' ? parts.shift() : 'div';
+    var node = document.createElement(tag);
+    parts.forEach(function (p) {
+      if (p[0] === '.') node.classList.add(p.slice(1));
+      else if (p[0] === '#') node.id = p.slice(1);
+    });
+    var i = 2;
+    if (attrs && attrs.nodeType === undefined && typeof attrs !== 'string') {
+      Object.keys(attrs).forEach(function (k) {
+        if (k === 'html') node.innerHTML = attrs[k];
+        else if (k === 'text') node.textContent = attrs[k];
+        else if (k.slice(0, 2) === 'on') node.addEventListener(k.slice(2), attrs[k]);
+        else if (k === 'style' && typeof attrs[k] === 'object')
+          Object.assign(node.style, attrs[k]);
+        else node.setAttribute(k, attrs[k]);
+      });
+    } else { i = 1; }
+    for (; i < arguments.length; i++) {
+      var c = arguments[i];
+      if (c == null) continue;
+      node.appendChild(c.nodeType ? c : document.createTextNode(String(c)));
+    }
+    return node;
+  };
+
+  LV.clear = function (node) { while (node.firstChild) node.removeChild(node.firstChild); return node; };
+
+  /* ---- subscript helpers -------------------------------------------------- */
+  var SUB = { '0': '₀', '1': '₁', '2': '₂', '3': '₃', '4': '₄', '5': '₅', '6': '₆', '7': '₇', '8': '₈', '9': '₉' };
+  var UNSUB = { '₀': '0', '₁': '1', '₂': '2', '₃': '3', '₄': '4', '₅': '5', '₆': '6', '₇': '7', '₈': '8', '₉': '9' };
+  LV.sub = function (n) { return String(n).split('').map(function (d) { return SUB[d] || d; }).join(''); };
+
+  /* =========================================================================
+     FORMULA PARSER
+     Accepts unicode operators and ascii fallbacks:
+       □ [] | ◇ <> | ¬ ! ~ | ∧ & | ∨ + | → -> | ↔ <-> | ⊤ T1 | ⊥ F0
+     Agents: K1 K₁ K2 K₂ ...   Group operators: C (common), D (distributed)
+     Atoms: single lowercase letters a..z
+     Precedence (loose -> tight): ↔  <  →  <  ∨  <  ∧  <  unary(¬ □ ◇ K C D)
+     → is right-associative.
+     ========================================================================= */
+
+  function normalize(s) {
+    return s
+      .replace(/<->/g, '↔').replace(/<=>/g, '↔')
+      .replace(/->/g, '→').replace(/=>/g, '→')
+      .replace(/\[\]/g, '□').replace(/<>/g, '◇')
+      .replace(/!/g, '¬').replace(/~/g, '¬')
+      .replace(/&/g, '∧');
+    // note: '|' and '+' are NOT auto-mapped to ∨ to avoid clashing with text; use ∨.
+  }
+
+  function tokenize(s) {
+    s = normalize(s);
+    var toks = [], i = 0;
+    while (i < s.length) {
+      var c = s[i];
+      if (/\s/.test(c)) { i++; continue; }
+      if ('()¬∧∨→↔□◇⊤⊥'.indexOf(c) >= 0) { toks.push({ k: c }); i++; continue; }
+      if (c === 'K') {
+        var j = i + 1, num = '';
+        while (j < s.length && (/[0-9]/.test(s[j]) || UNSUB[s[j]])) {
+          num += UNSUB[s[j]] || s[j]; j++;
+        }
+        toks.push({ k: 'K', agent: num ? parseInt(num, 10) : 1 });
+        i = j; continue;
+      }
+      if (c === 'C') { toks.push({ k: 'C' }); i++; continue; }
+      if (c === 'D') { toks.push({ k: 'D' }); i++; continue; }
+      if (/[a-z]/.test(c)) { toks.push({ k: 'atom', name: c }); i++; continue; }
+      throw new Error('Unexpected character: "' + c + '"');
+    }
+    return toks;
+  }
+
+  LV.parse = function (str) {
+    var toks = tokenize(str), pos = 0;
+    function peek() { return toks[pos]; }
+    function next() { return toks[pos++]; }
+    function expect(k) {
+      var t = next();
+      if (!t || t.k !== k) throw new Error('Expected ' + k);
+      return t;
+    }
+    function parseIff() {
+      var a = parseImp();
+      while (peek() && peek().k === '↔') { next(); a = { t: 'iff', a: a, b: parseImp() }; }
+      return a;
+    }
+    function parseImp() {
+      var a = parseOr();
+      if (peek() && peek().k === '→') { next(); return { t: 'imp', a: a, b: parseImp() }; }
+      return a;
+    }
+    function parseOr() {
+      var a = parseAnd();
+      while (peek() && peek().k === '∨') { next(); a = { t: 'or', a: a, b: parseAnd() }; }
+      return a;
+    }
+    function parseAnd() {
+      var a = parseUnary();
+      while (peek() && peek().k === '∧') { next(); a = { t: 'and', a: a, b: parseUnary() }; }
+      return a;
+    }
+    function parseUnary() {
+      var t = peek();
+      if (!t) throw new Error('Unexpected end of formula');
+      if (t.k === '¬') { next(); return { t: 'not', a: parseUnary() }; }
+      if (t.k === '□') { next(); return { t: 'box', a: parseUnary() }; }
+      if (t.k === '◇') { next(); return { t: 'dia', a: parseUnary() }; }
+      if (t.k === 'K') { next(); return { t: 'K', agent: t.agent, a: parseUnary() }; }
+      if (t.k === 'C') { next(); return { t: 'C', a: parseUnary() }; }
+      if (t.k === 'D') { next(); return { t: 'D', a: parseUnary() }; }
+      return parseAtom();
+    }
+    function parseAtom() {
+      var t = peek();
+      if (!t) throw new Error('Unexpected end of formula');
+      if (t.k === '(') { next(); var e = parseIff(); expect(')'); return e; }
+      if (t.k === '⊤') { next(); return { t: 'top' }; }
+      if (t.k === '⊥') { next(); return { t: 'bot' }; }
+      if (t.k === 'atom') { next(); return { t: 'atom', name: t.name }; }
+      throw new Error('Unexpected token: ' + t.k);
+    }
+    var ast = parseIff();
+    if (pos < toks.length) throw new Error('Trailing tokens after formula');
+    return ast;
+  };
+
+  /* render an AST back to a pretty unicode string (for echoing) */
+  LV.show = function (ast) {
+    function p(node, parentPrec) {
+      var prec = { iff: 1, imp: 2, or: 3, and: 4 };
+      var s;
+      switch (node.t) {
+        case 'atom': return node.name;
+        case 'top': return '⊤';
+        case 'bot': return '⊥';
+        case 'not': return '¬' + p(node.a, 5);
+        case 'box': return '□' + p(node.a, 5);
+        case 'dia': return '◇' + p(node.a, 5);
+        case 'K': return 'K' + LV.sub(node.agent) + p(node.a, 5);
+        case 'C': return 'C' + p(node.a, 5);
+        case 'D': return 'D' + p(node.a, 5);
+        case 'and': s = p(node.a, 4) + ' ∧ ' + p(node.b, 4); return wrap(4, parentPrec, s);
+        case 'or': s = p(node.a, 3) + ' ∨ ' + p(node.b, 3); return wrap(3, parentPrec, s);
+        case 'imp': s = p(node.a, 3) + ' → ' + p(node.b, 2); return wrap(2, parentPrec, s);
+        case 'iff': s = p(node.a, 2) + ' ↔ ' + p(node.b, 1); return wrap(1, parentPrec, s);
+      }
+      return '?';
+    }
+    function wrap(prec, parent, s) { return prec < parent ? '(' + s + ')' : s; }
+    return p(ast, 0);
+  };
+
+  /* collect atoms used in a formula */
+  LV.atomsOf = function (ast, acc) {
+    acc = acc || {};
+    if (!ast) return acc;
+    if (ast.t === 'atom') acc[ast.name] = true;
+    if (ast.a) LV.atomsOf(ast.a, acc);
+    if (ast.b) LV.atomsOf(ast.b, acc);
+    return acc;
+  };
+
+  /* =========================================================================
+     GENERIC EVALUATOR
+     A "frame interpretation" supplies how the modal connectives are read:
+       interp = {
+         atom(name, point) -> bool,
+         box(evalChild, point) -> bool,        // □
+         dia(evalChild, point) -> bool,        // ◇
+         K(agent, evalChild, point) -> bool,   // optional
+         C(evalChild, point) -> bool,          // optional
+         D(evalChild, point) -> bool           // optional
+       }
+     evalChild is a function(point) the interpretation calls on accessible points.
+     ========================================================================= */
+  LV.evalAST = function (ast, point, interp) {
+    function ev(node, pt) {
+      switch (node.t) {
+        case 'atom': return !!interp.atom(node.name, pt);
+        case 'top': return true;
+        case 'bot': return false;
+        case 'not': return !ev(node.a, pt);
+        case 'and': return ev(node.a, pt) && ev(node.b, pt);
+        case 'or': return ev(node.a, pt) || ev(node.b, pt);
+        case 'imp': return !ev(node.a, pt) || ev(node.b, pt);
+        case 'iff': return ev(node.a, pt) === ev(node.b, pt);
+        case 'box': return interp.box(function (q) { return ev(node.a, q); }, pt);
+        case 'dia': return interp.dia(function (q) { return ev(node.a, q); }, pt);
+        case 'K': return (interp.K || interp.box)(node.agent, function (q) { return ev(node.a, q); }, pt);
+        case 'C': return (interp.C || interp.box)(function (q) { return ev(node.a, q); }, pt);
+        case 'D': return (interp.D || interp.box)(function (q) { return ev(node.a, q); }, pt);
+      }
+      throw new Error('Unknown node ' + node.t);
+    }
+    return ev(ast, point);
+  };
+
+  /* =========================================================================
+     RELATION ALGEBRA over integer-id worlds (used by kripke + topology + agents)
+     ========================================================================= */
+  LV.rel = {
+    // successors of w under a list of {from,to} edges (optionally filtered by agent)
+    succ: function (edges, w, agent) {
+      var out = [];
+      for (var i = 0; i < edges.length; i++) {
+        var e = edges[i];
+        if (e.from === w && (agent == null || e.agent === agent)) out.push(e.to);
+      }
+      return out;
+    },
+    has: function (edges, a, b, agent) {
+      return edges.some(function (e) {
+        return e.from === a && e.to === b && (agent == null || e.agent === agent);
+      });
+    },
+    // reflexive-transitive closure reachable set from w over given edge predicate
+    reach: function (ids, edges, w, agentSet) {
+      var seen = {}, stack = [w]; seen[w] = true;
+      while (stack.length) {
+        var x = stack.pop();
+        for (var i = 0; i < edges.length; i++) {
+          var e = edges[i];
+          if (e.from !== x) continue;
+          if (agentSet && agentSet.indexOf(e.agent) < 0) continue;
+          if (!seen[e.to]) { seen[e.to] = true; stack.push(e.to); }
+        }
+      }
+      return Object.keys(seen).map(Number);
+    },
+    // frame property checks
+    isReflexive: function (ids, edges) { return ids.every(function (w) { return LV.rel.has(edges, w, w); }); },
+    isSymmetric: function (ids, edges) {
+      return edges.every(function (e) { return LV.rel.has(edges, e.to, e.from, e.agent); });
+    },
+    isTransitive: function (ids, edges) {
+      for (var i = 0; i < edges.length; i++)
+        for (var j = 0; j < edges.length; j++)
+          if (edges[i].to === edges[j].from && edges[i].agent === edges[j].agent)
+            if (!LV.rel.has(edges, edges[i].from, edges[j].to, edges[i].agent)) return false;
+      return true;
+    },
+    isEuclidean: function (ids, edges) {
+      for (var i = 0; i < edges.length; i++)
+        for (var j = 0; j < edges.length; j++)
+          if (edges[i].from === edges[j].from && edges[i].agent === edges[j].agent)
+            if (!LV.rel.has(edges, edges[i].to, edges[j].to, edges[i].agent)) return false;
+      return true;
+    },
+    isSerial: function (ids, edges) {
+      return ids.every(function (w) { return edges.some(function (e) { return e.from === w; }); });
+    }
+  };
+
+  /* theme colours (reads CSS variables so light/dark stay in sync) */
+  LV.theme = function () {
+    var cs = getComputedStyle(document.documentElement);
+    function v(n) { return cs.getPropertyValue(n).trim(); }
+    return {
+      bg: v('--paper'), paper: v('--parchment'), ink: v('--ink'),
+      muted: v('--muted'), rule: v('--rule'), accent: v('--accent'),
+      accent2: v('--accent2'), accent3: v('--accent3'), gold: v('--gold')
+    };
+  };
+
+})(window);
+
+/* ===== js/m1-kripke.js ===== */
+/* ===========================================================================
+   m1-kripke.js — Possible-worlds semantics
+   Build a frame on a canvas; evaluate modal/epistemic formulas world-by-world;
+   read off frame properties; switch among K / T / S4 / S5 / epistemic.
+   ========================================================================= */
+(function () {
+  'use strict';
+  var el = LV.el;
+
+  var SYSTEMS = {
+    K:  { name: 'K',  axioms: ['K'],                req: [] },
+    T:  { name: 'T',  axioms: ['K', 'T'],            req: ['reflexive'] },
+    S4: { name: 'S4', axioms: ['K', 'T', '4'],       req: ['reflexive', 'transitive'] },
+    S5: { name: 'S5', axioms: ['K', 'T', 'B', '4', '5'], req: ['reflexive', 'symmetric', 'transitive'] },
+    Ep: { name: 'S5 (epistemic)', axioms: ['K', 'T', '4', '5'], req: ['equivalence'] }
+  };
+  var AX = {
+    K:  { f: '□(p→q)→(□p→□q)', d: 'distribution (holds in every Kripke frame)' },
+    T:  { f: '□p→p',           d: 'reflexivity — what is necessary is true' },
+    '4':{ f: '□p→□□p',         d: 'transitivity — positive introspection' },
+    B:  { f: 'p→□◇p',          d: 'symmetry — the Brouwer axiom' },
+    '5':{ f: '◇p→□◇p',         d: 'euclidean — negative introspection' }
+  };
+
+  function mod() {
+    var worlds = [], edges = [], nextId = 0, sel = null, sys = 'S5';
+    var tool = 'world', relSrc = null, dragging = null, dox = 0, doy = 0, mx = 0, my = 0;
+    var R = 28;
+    var canvas, ctx, tip, refs = {};
+
+    function preset(name) {
+      worlds = []; edges = []; nextId = 0; sel = null; relSrc = null;
+      function w(x, y, v) { worlds.push({ id: nextId, x: x, y: y, label: 'w' + LV.sub(nextId + 1), val: v }); nextId++; }
+      function e(a, b) { edges.push({ from: a, to: b, agent: 1 }); }
+      if (name === 's5') {
+        w(150, 150, { p: 1, q: 0 }); w(360, 110, { p: 0, q: 1 }); w(330, 270, { p: 1, q: 1 });
+        [0, 1, 2].forEach(function (i) { e(i, i); });
+        e(0, 1); e(1, 0); e(1, 2); e(2, 1); e(0, 2); e(2, 0); sys = 'S5';
+      } else if (name === 's4') {
+        w(90, 180, { p: 1, q: 0 }); w(240, 180, { p: 1, q: 1 }); w(390, 180, { p: 0, q: 1 }); w(540, 180, { p: 0, q: 0 });
+        [0, 1, 2, 3].forEach(function (i) { e(i, i); });
+        e(0, 1); e(1, 2); e(2, 3); e(0, 2); e(0, 3); e(1, 3); sys = 'S4';
+      } else if (name === 'failT') {
+        w(160, 160, { p: 1 }); w(380, 160, { p: 0 });
+        e(0, 1); sys = 'K'; // no reflexive loops: T should fail
+      }
+      sys && setSys(sys);
+      refresh();
+    }
+
+    /* ---- geometry / hit-testing ---- */
+    function worldAt(x, y) {
+      for (var i = worlds.length - 1; i >= 0; i--)
+        if (Math.hypot(worlds[i].x - x, worlds[i].y - y) < R) return worlds[i];
+      return null;
+    }
+
+    /* ---- evaluation ---- */
+    function interp() {
+      return {
+        atom: function (n, w) { var ww = worlds.find(function (x) { return x.id === w; }); return ww && ww.val[n]; },
+        box: function (child, w) { var s = LV.rel.succ(edges, w); return s.every(child); },
+        dia: function (child, w) { var s = LV.rel.succ(edges, w); return s.some(child); },
+        K: function (ag, child, w) { var s = LV.rel.succ(edges, w); return s.every(child); }
+      };
+    }
+    function evalAt(ast, w) { return LV.evalAST(ast, w, interp()); }
+
+    function evaluate() {
+      var raw = refs.formula.value.trim();
+      LV.clear(refs.evalOut);
+      if (!raw || !worlds.length) { renderTruth(null); return; }
+      var ast;
+      try { ast = LV.parse(raw); }
+      catch (err) { refs.evalOut.appendChild(el('span.badge.b-no', { text: '⚠ ' + err.message })); renderTruth(null); return; }
+      var rows = worlds.map(function (w) { return { w: w, v: evalAt(ast, w.id) }; });
+      var all = rows.every(function (r) { return r.v; });
+      var none = rows.every(function (r) { return !r.v; });
+      refs.evalOut.appendChild(
+        el('span', { 'class': 'badge ' + (all ? 'b-ok' : none ? 'b-no' : 'b-info') },
+          all ? '✓ valid in this model' : none ? '✗ false at every world' : '~ true at some worlds')
+      );
+      refs.evalOut.appendChild(el('span.mono', { style: { marginLeft: '10px', fontSize: '12px', color: 'var(--muted)' }, text: LV.show(ast) }));
+      renderTruth(rows);
+      draw();
+    }
+
+    function renderTruth(rows) {
+      var pane = refs.truth; LV.clear(pane);
+      if (!rows) { pane.appendChild(el('p.muted', { style: { fontSize: '12px' }, text: 'evaluate a formula to see truth at each world' })); return; }
+      var t = el('table.tbl');
+      t.appendChild(el('tr', null, el('th', { text: 'world' }), el('th', { text: 'valuation' }), el('th', { text: 'φ' })));
+      rows.forEach(function (r) {
+        var props = Object.keys(r.w.val).filter(function (k) { return r.w.val[k]; }).join(',') || '∅';
+        t.appendChild(el('tr', null,
+          el('td', { text: r.w.label }),
+          el('td', { text: '{' + props + '}' }),
+          el('td', { 'class': r.v ? 'tag-ok' : 'tag-no', text: r.v ? 'T' : 'F' })));
+      });
+      pane.appendChild(t);
+    }
+
+    /* ---- axioms / frame properties ---- */
+    function checkAxiom(a) {
+      var ids = worlds.map(function (w) { return w.id; });
+      if (a === 'K') return true; // valid in all frames
+      if (a === 'T') return LV.rel.isReflexive(ids, edges);
+      if (a === '4') return LV.rel.isTransitive(ids, edges);
+      if (a === 'B') return LV.rel.isSymmetric(ids, edges);
+      if (a === '5') return LV.rel.isEuclidean(ids, edges);
+      return true;
+    }
+    function renderAxioms() {
+      var s = SYSTEMS[sys]; refs.sysName.textContent = s.name;
+      LV.clear(refs.axioms);
+      s.axioms.forEach(function (a) {
+        var ok = checkAxiom(a);
+        refs.axioms.appendChild(
+          el('div.axiom', null,
+            el('span.name', { text: a }),
+            el('span.f', { text: AX[a].f }),
+            el('span', { 'class': 'st ' + (ok ? 'tag-ok' : 'tag-no'), text: ok ? '✓' : '✗' })));
+      });
+      // observed frame properties
+      var ids = worlds.map(function (w) { return w.id; });
+      var props = [];
+      if (LV.rel.isReflexive(ids, edges)) props.push('reflexive');
+      if (LV.rel.isSymmetric(ids, edges)) props.push('symmetric');
+      if (LV.rel.isTransitive(ids, edges)) props.push('transitive');
+      if (LV.rel.isEuclidean(ids, edges)) props.push('euclidean');
+      if (LV.rel.isSerial(ids, edges)) props.push('serial');
+      refs.frameProps.textContent = props.length ? 'Observed frame: ' + props.join(', ') : 'No special frame properties hold.';
+    }
+
+    function setSys(s) {
+      sys = s;
+      Array.prototype.forEach.call(refs.sysTabs.children, function (b) { b.classList.toggle('active', b.dataset.sys === s); });
+      renderAxioms(); evaluate();
+    }
+
+    /* ---- canvas drawing ---- */
+    function resize() {
+      var w = canvas.parentElement.clientWidth;
+      canvas.width = w; canvas.height = 420; draw();
+    }
+    function arrow(x, y, bx, by, color) {
+      var dx = x - bx, dy = y - by, l = Math.hypot(dx, dy) || 1, ux = dx / l, uy = dy / l, px = -uy, py = ux;
+      ctx.fillStyle = color; ctx.beginPath();
+      ctx.moveTo(x, y); ctx.lineTo(x - ux * 9 + px * 4, y - uy * 9 + py * 4);
+      ctx.lineTo(x - ux * 9 - px * 4, y - uy * 9 - py * 4); ctx.closePath(); ctx.fill();
+    }
+    function draw() {
+      if (!ctx) return;
+      var C = LV.theme();
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = C.bg; ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.strokeStyle = C.rule; ctx.lineWidth = .5; ctx.globalAlpha = .4;
+      for (var x = 0; x < canvas.width; x += 38) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke(); }
+      for (var y = 0; y < canvas.height; y += 38) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke(); }
+      ctx.globalAlpha = 1;
+      edges.forEach(function (e) { drawEdge(e, C); });
+      if (tool === 'relation' && relSrc != null) {
+        var s = worlds.find(function (w) { return w.id === relSrc; });
+        if (s) { ctx.strokeStyle = C.accent; ctx.setLineDash([5, 4]); ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(s.x, s.y); ctx.lineTo(mx, my); ctx.stroke(); ctx.setLineDash([]); }
+      }
+      worlds.forEach(function (w) { drawWorld(w, C); });
+    }
+    function drawEdge(e, C) {
+      var a = worlds.find(function (w) { return w.id === e.from; }), b = worlds.find(function (w) { return w.id === e.to; });
+      if (!a || !b) return;
+      ctx.strokeStyle = C.accent; ctx.lineWidth = 1.4; ctx.setLineDash([]);
+      if (e.from === e.to) {
+        var lx = a.x + R * 1.15, ly = a.y - R * 1.15;
+        ctx.beginPath(); ctx.arc(lx, ly, 15, 0, Math.PI * 2); ctx.stroke();
+        arrow(lx + 10, ly + 11, lx + 3, ly + 14, C.accent); return;
+      }
+      var rev = edges.some(function (x) { return x.from === e.to && x.to === e.from; });
+      var dx = b.x - a.x, dy = b.y - a.y, l = Math.hypot(dx, dy), ux = dx / l, uy = dy / l, nx = -uy, ny = ux;
+      var sx = a.x + ux * R, sy = a.y + uy * R, ex = b.x - ux * R, ey = b.y - uy * R;
+      if (rev) {
+        sx += nx * 9; sy += ny * 9; ex += nx * 9; ey += ny * 9;
+        var mx2 = (sx + ex) / 2 + nx * 16, my2 = (sy + ey) / 2 + ny * 16;
+        ctx.beginPath(); ctx.moveTo(sx, sy); ctx.quadraticCurveTo(mx2, my2, ex, ey); ctx.stroke();
+        arrow(ex, ey, ex - ux * 8 + nx * 3, ey - uy * 8 + ny * 3, C.accent);
+      } else {
+        ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(ex, ey); ctx.stroke();
+        arrow(ex, ey, ex - ux * 10, ey - uy * 10, C.accent);
+      }
+    }
+    function drawWorld(w, C) {
+      var isSel = w.id === sel, isSrc = w.id === relSrc;
+      ctx.beginPath(); ctx.arc(w.x, w.y, R, 0, Math.PI * 2);
+      ctx.fillStyle = isSel ? C.warm : C.paper; ctx.fill();
+      ctx.strokeStyle = isSrc ? C.accent2 : isSel ? C.accent : C.gold;
+      ctx.lineWidth = isSel || isSrc ? 2.5 : 1.5; ctx.stroke();
+      ctx.fillStyle = C.ink; ctx.font = 'bold 14px Playfair Display, serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(w.label, w.x, w.y);
+      var tp = Object.keys(w.val).filter(function (k) { return w.val[k]; });
+      if (tp.length) { ctx.font = '10px JetBrains Mono, monospace'; ctx.fillStyle = C.accent3; ctx.fillText(tp.join(','), w.x, w.y + R + 11); }
+    }
+
+    /* ---- world property editor ---- */
+    function renderProps() {
+      var pane = refs.props; LV.clear(pane);
+      var w = worlds.find(function (x) { return x.id === sel; });
+      if (!w) { pane.appendChild(el('p.muted', { style: { fontSize: '12px' }, text: 'click a world to edit its valuation' })); return; }
+      pane.appendChild(el('div.mono', { style: { fontSize: '12px', color: 'var(--accent)', marginBottom: '8px' }, text: 'World ' + w.label }));
+      ['p', 'q', 'r'].forEach(function (p) {
+        var cb = el('input', { type: 'checkbox' }); cb.checked = !!w.val[p];
+        cb.addEventListener('change', function () { w.val[p] = cb.checked ? 1 : 0; evaluate(); draw(); });
+        pane.appendChild(el('label', { style: { display: 'flex', alignItems: 'center', gap: '8px', fontFamily: 'var(--mono)', fontSize: '13px', marginBottom: '5px' } },
+          cb, el('span', { text: p }), el('span.muted', { text: w.val[p] ? 'T' : 'F' })));
+      });
+    }
+
+    function setTool(t) {
+      tool = t; relSrc = null;
+      Array.prototype.forEach.call(refs.tools.children, function (b) { b.classList.toggle('active', b.dataset.tool === t); });
+      draw();
+    }
+
+    function refresh() { renderProps(); renderAxioms(); evaluate(); draw(); }
+
+    /* ---- build DOM ---- */
+    function mount(stage) {
+      LV.clear(stage);
+      stage.appendChild(el('div.module-head', null,
+        el('div.kicker', { text: 'Module I · relational semantics' }),
+        el('h2', { text: 'Kripke models, modal & epistemic logic' }),
+        el('p', { text: 'A model is a set of possible worlds, an accessibility relation, and a valuation. □φ holds at w iff φ holds at every accessible world; ◇φ iff at some. Reading the relation as an agent\u2019s indistinguishability gives epistemic logic, where □ becomes "the agent knows".' })));
+
+      var body = el('div.module-body');
+      stage.appendChild(body);
+
+      // toolbar
+      var tools = el('div.btn-row', { style: { marginBottom: '14px' } });
+      [['world', '+ world'], ['relation', '↗ relation'], ['move', '✥ move'], ['delete', '⌫ delete']].forEach(function (t) {
+        var b = el('button.btn', { text: t[1] }); b.dataset.tool = t[0];
+        b.addEventListener('click', function () { setTool(t[0]); }); tools.appendChild(b);
+      });
+      tools.appendChild(el('span', { style: { width: '14px' } }));
+      [['s5', 'preset: S5'], ['s4', 'preset: S4 chain'], ['failT', 'preset: T fails']].forEach(function (p) {
+        var b = el('button.btn', { text: p[1] }); b.addEventListener('click', function () { preset(p[0]); }); tools.appendChild(b);
+      });
+      refs.tools = tools;
+      body.appendChild(tools);
+
+      var split = el('div.split');
+      body.appendChild(split);
+
+      // canvas
+      var cwrap = el('div.canvas-card');
+      canvas = el('canvas'); cwrap.appendChild(canvas);
+      tip = el('div.tooltip'); cwrap.appendChild(tip);
+      split.appendChild(cwrap);
+      ctx = canvas.getContext('2d');
+
+      // right column
+      var col = el('div.grid', { style: { gridTemplateColumns: '1fr' } });
+      split.appendChild(col);
+
+      // formula card
+      var fcard = el('div.card');
+      fcard.appendChild(el('h4', { text: 'formula' }));
+      refs.formula = el('input', { type: 'text', value: '□p → p', style: { width: '100%' } });
+      var frow = el('div.btn-row');
+      frow.appendChild(refs.formula);
+      var evalBtn = el('button.btn.primary', { text: 'eval' }); evalBtn.addEventListener('click', evaluate);
+      frow.appendChild(evalBtn);
+      fcard.appendChild(frow);
+      var sr = el('div.symrow');
+      '□ ◇ ¬ ∧ ∨ → ↔ ⊤ ⊥'.split(' ').forEach(function (s) {
+        var b = el('button.sym', { text: s }); b.addEventListener('click', function () { insert(s); }); sr.appendChild(b);
+      });
+      fcard.appendChild(sr);
+      refs.evalOut = el('div', { style: { marginTop: '10px' } }); fcard.appendChild(refs.evalOut);
+      col.appendChild(fcard);
+
+      // system card
+      var scard = el('div.card');
+      scard.appendChild(el('h4', { text: 'logical system' }));
+      var tabs = el('div.btn-row', { style: { marginBottom: '10px' } });
+      Object.keys(SYSTEMS).forEach(function (k) {
+        var b = el('button.btn', { text: SYSTEMS[k].name === 'S5 (epistemic)' ? 'Sₑₚ' : SYSTEMS[k].name });
+        b.dataset.sys = k; b.addEventListener('click', function () { setSys(k); }); tabs.appendChild(b);
+      });
+      refs.sysTabs = tabs; scard.appendChild(tabs);
+      scard.appendChild(el('div.mono', { style: { fontSize: '11px', color: 'var(--muted)', marginBottom: '8px' } },
+        el('span', { text: 'axioms of ' }), refs.sysName = el('span', { style: { color: 'var(--accent)' }, text: 'S5' })));
+      refs.axioms = el('div'); scard.appendChild(refs.axioms);
+      refs.frameProps = el('div.mono', { style: { fontSize: '11px', color: 'var(--muted)', marginTop: '8px' } }); scard.appendChild(refs.frameProps);
+      col.appendChild(scard);
+
+      // world props
+      var pcard = el('div.card'); pcard.appendChild(el('h4', { text: 'selected world' }));
+      refs.props = el('div'); pcard.appendChild(refs.props); col.appendChild(pcard);
+
+      // truth table
+      var tcard = el('div.card'); tcard.appendChild(el('h4', { text: 'truth at worlds' }));
+      refs.truth = el('div'); tcard.appendChild(refs.truth); col.appendChild(tcard);
+
+      // canvas listeners
+      canvas.addEventListener('mousedown', onDown);
+      canvas.addEventListener('mousemove', onMove);
+      window.addEventListener('mouseup', function () { dragging = null; });
+      canvas.addEventListener('mouseleave', function () { tip.style.opacity = 0; });
+
+      var ro = function () { resize(); }; window.addEventListener('resize', ro);
+      setTimeout(function () { resize(); preset('s5'); }, 30);
+    }
+
+    function insert(s) {
+      var i = refs.formula.value.length; refs.formula.value += s; refs.formula.focus();
+    }
+    function onDown(ev) {
+      var r = canvas.getBoundingClientRect(), x = ev.clientX - r.left, y = ev.clientY - r.top, hit = worldAt(x, y);
+      if (tool === 'world') {
+        if (!hit) { worlds.push({ id: nextId, x: x, y: y, label: 'w' + LV.sub(nextId + 1), val: {} }); sel = nextId; nextId++; }
+        else sel = hit.id;
+        renderProps(); draw();
+      } else if (tool === 'relation') {
+        if (!hit) return;
+        if (relSrc == null) relSrc = hit.id;
+        else { if (!LV.rel.has(edges, relSrc, hit.id)) edges.push({ from: relSrc, to: hit.id, agent: 1 }); relSrc = null; refresh(); }
+      } else if (tool === 'move') { if (hit) { dragging = hit.id; dox = x - hit.x; doy = y - hit.y; } }
+      else if (tool === 'delete') {
+        if (hit) { worlds = worlds.filter(function (w) { return w.id !== hit.id; }); edges = edges.filter(function (e) { return e.from !== hit.id && e.to !== hit.id; }); if (sel === hit.id) { sel = null; renderProps(); } }
+        else { var nr = nearestEdge(x, y); if (nr) edges = edges.filter(function (e) { return e !== nr; }); }
+        refresh();
+      }
+    }
+    function onMove(ev) {
+      var r = canvas.getBoundingClientRect(); mx = ev.clientX - r.left; my = ev.clientY - r.top;
+      if (dragging != null) { var w = worlds.find(function (x) { return x.id === dragging; }); if (w) { w.x = mx - dox; w.y = my - doy; } draw(); }
+      else if (tool === 'relation' && relSrc != null) draw();
+      var hit = worldAt(mx, my);
+      if (hit && tool !== 'move') {
+        var props = Object.keys(hit.val).filter(function (k) { return hit.val[k]; }).join(', ') || '∅';
+        tip.textContent = hit.label + ': {' + props + '}';
+        tip.style.left = (hit.x + 34) + 'px'; tip.style.top = (hit.y - 18) + 'px'; tip.style.opacity = 1;
+      } else tip.style.opacity = 0;
+    }
+    function nearestEdge(x, y) {
+      var best = null, bd = 16;
+      edges.forEach(function (e) {
+        if (e.from === e.to) return;
+        var a = worlds.find(function (w) { return w.id === e.from; }), b = worlds.find(function (w) { return w.id === e.to; });
+        if (!a || !b) return; var d = Math.hypot(x - (a.x + b.x) / 2, y - (a.y + b.y) / 2);
+        if (d < bd) { bd = d; best = e; }
+      }); return best;
+    }
+
+    return { mount: mount };
+  }
+
+  LV.register({
+    id: 'kripke', no: 'I', title: 'Kripke models',
+    sub: 'Modal · epistemic · S4 / S5',
+    create: mod
+  });
+})();
+
+/* ===== js/m2-topology.js ===== */
+/* ===========================================================================
+   m2-topology.js — Topological semantics (McKinsey–Tarski)
+   On a topological space (X, τ): ⟦□φ⟧ = interior ⟦φ⟧, ⟦◇φ⟧ = closure ⟦φ⟧.
+   S4 is sound & complete w.r.t. topological spaces — the same logic as
+   reflexive-transitive Kripke frames, seen geometrically.
+   Here X is a small finite space; the user paints ⟦p⟧ and watches □p, ◇p,
+   the boundary, and the S4 laws (int int = int, int A ⊆ A) verify live.
+   ========================================================================= */
+(function () {
+  'use strict';
+  var el = LV.el;
+
+  // generate a topology τ on X from a subbasis: close under finite ∩ and arbitrary ∪
+  function genTopology(X, subbasis) {
+    function key(s) { return X.filter(function (x) { return s[x]; }).join(','); }
+    var sets = {}; // key -> boolean-map
+    function add(s) { sets[key(s)] = s; }
+    var empty = {}; var full = {}; X.forEach(function (x) { full[x] = true; });
+    add(empty); add(full);
+    subbasis.forEach(function (b) { var m = {}; b.forEach(function (x) { m[x] = true; }); add(m); });
+    var changed = true;
+    while (changed) {
+      changed = false;
+      var vals = Object.keys(sets).map(function (k) { return sets[k]; });
+      for (var i = 0; i < vals.length; i++) for (var j = 0; j < vals.length; j++) {
+        var inter = {}, uni = {};
+        X.forEach(function (x) { if (vals[i][x] && vals[j][x]) inter[x] = true; if (vals[i][x] || vals[j][x]) uni[x] = true; });
+        if (!(key(inter) in sets)) { add(inter); changed = true; }
+        if (!(key(uni) in sets)) { add(uni); changed = true; }
+      }
+    }
+    return Object.keys(sets).map(function (k) { return sets[k]; });
+  }
+
+  function mod() {
+    var refs = {}, canvas, ctx;
+    // X = 5 collinear points; subbasis U={x0,x1,x2}, V={x2,x3,x4}
+    var X = [0, 1, 2, 3, 4];
+    var pos = [[120, 150], [230, 150], [340, 150], [450, 150], [560, 150]];
+    var subbasis = [[0, 1, 2], [2, 3, 4]];
+    var tau = genTopology(X, subbasis);
+    var P = { 2: true, 3: true }; // current ⟦p⟧ (the "rabbit" set, default {x2,x3})
+
+    function subset(a, b) { return X.every(function (x) { return !a[x] || b[x]; }); } // a ⊆ b
+    function comp(a) { var c = {}; X.forEach(function (x) { if (!a[x]) c[x] = true; }); return c; }
+
+    function interior(A) {
+      // largest open set ⊆ A = union of all open subsets
+      var res = {};
+      tau.forEach(function (O) { if (subset(O, A)) X.forEach(function (x) { if (O[x]) res[x] = true; }); });
+      return res;
+    }
+    function closure(A) { return comp(interior(comp(A))); } // cl A = X \ int(X\A)
+
+    function setEq(a, b) { return X.every(function (x) { return !!a[x] === !!b[x]; }); }
+
+    function recompute() {
+      var A = {}; Object.keys(P).forEach(function (k) { if (P[k]) A[k] = true; });
+      var intA = interior(A), clA = closure(A);
+      // S4 law checks
+      var idempotent = setEq(interior(intA), intA);  // int int = int   (axiom 4)
+      var deflation = subset(intA, A);                // int A ⊆ A       (axiom T)
+      var inflation = subset(A, clA);                 // A ⊆ cl A
+      LV.clear(refs.laws);
+      [['□φ → φ', deflation, 'int A ⊆ A  (T)'],
+       ['□φ → □□φ', idempotent, 'int(int A) = int A  (4)'],
+       ['φ → ◇φ', inflation, 'A ⊆ cl A']].forEach(function (r) {
+        refs.laws.appendChild(el('div.axiom', null,
+          el('span.f', { text: r[0] }),
+          el('span.muted', { style: { fontSize: '11px', fontFamily: 'var(--mono)' }, text: r[2] }),
+          el('span', { 'class': 'st ' + (r[1] ? 'tag-ok' : 'tag-no'), text: r[1] ? '✓' : '✗' })));
+      });
+      // sets readout
+      function fmt(m) { var s = X.filter(function (x) { return m[x]; }).map(function (x) { return 'x' + LV.sub(x); }); return s.length ? '{' + s.join(', ') + '}' : '∅'; }
+      LV.clear(refs.sets);
+      var t = el('table.tbl');
+      [['⟦p⟧', fmt(A), 'var(--ink)'],
+       ['□p = int ⟦p⟧', fmt(intA), 'var(--accent3)'],
+       ['◇p = cl ⟦p⟧', fmt(clA), 'var(--accent2)'],
+       ['boundary ∂p', fmt(boundary(A, intA, clA)), 'var(--gold)']].forEach(function (r) {
+        t.appendChild(el('tr', null, el('td', { style: { color: r[2] }, text: r[0] }), el('td', { text: r[1] })));
+      });
+      refs.sets.appendChild(t);
+      draw(A, intA, clA);
+    }
+    function boundary(A, intA, clA) { var b = {}; X.forEach(function (x) { if (clA[x] && !intA[x]) b[x] = true; }); return b; }
+
+    function resize() { var w = canvas.parentElement.clientWidth; canvas.width = w; canvas.height = 300; recompute(); }
+
+    function draw(A, intA, clA) {
+      if (!ctx) return;
+      var C = LV.theme();
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = C.bg; ctx.fillRect(0, 0, canvas.width, canvas.height);
+      // draw the two basic open sets as translucent regions
+      function blob(set, color, label, dy) {
+        var xs = set.map(function (x) { return pos[x][0]; });
+        var minx = Math.min.apply(null, xs) - 38, maxx = Math.max.apply(null, xs) + 38;
+        var cy = 150 + dy;
+        ctx.strokeStyle = color; ctx.fillStyle = color; ctx.globalAlpha = .08;
+        roundRect(minx, cy - 46, maxx - minx, 92, 30); ctx.fill();
+        ctx.globalAlpha = .55; ctx.lineWidth = 1.2; ctx.setLineDash([4, 3]); roundRect(minx, cy - 46, maxx - minx, 92, 30); ctx.stroke();
+        ctx.setLineDash([]); ctx.globalAlpha = 1;
+        ctx.fillStyle = color; ctx.font = '11px JetBrains Mono, monospace'; ctx.textAlign = 'left';
+        ctx.fillText(label, minx + 6, cy - 52);
+      }
+      blob([0, 1, 2], C.accent, 'open U', -14);
+      blob([2, 3, 4], C.gold, 'open V', 14);
+
+      // points
+      X.forEach(function (x) {
+        var p = pos[x], inP = !!A[x], inInt = !!intA[x], inCl = !!clA[x];
+        // outer ring colour encodes role
+        var ring = inInt ? C.accent3 : inCl ? C.accent2 : C.rule;
+        ctx.beginPath(); ctx.arc(p[0], p[1], 17, 0, Math.PI * 2);
+        ctx.fillStyle = inP ? C.warm : C.paper; ctx.fill();
+        ctx.lineWidth = (inInt || inCl) ? 3 : 1.4; ctx.strokeStyle = ring; ctx.stroke();
+        ctx.fillStyle = C.ink; ctx.font = 'bold 12px Playfair Display, serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText('x' + LV.sub(x), p[0], p[1]);
+        if (inP) { ctx.fillStyle = C.accent3; ctx.font = '10px JetBrains Mono'; ctx.fillText('p', p[0], p[1] + 28); }
+      });
+      // legend
+      ctx.font = '11px JetBrains Mono, monospace'; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+      ctx.fillStyle = C.accent3; ctx.fillText('● interior (□p)', 20, 280);
+      ctx.fillStyle = C.accent2; ctx.fillText('● closure (◇p)', 160, 280);
+      ctx.fillStyle = C.muted; ctx.fillText('fill = in ⟦p⟧ · click a point to toggle', 300, 280);
+    }
+    function roundRect(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+
+    function mount(stage) {
+      LV.clear(stage);
+      stage.appendChild(el('div.module-head', null,
+        el('div.kicker', { text: 'Module II · geometric semantics' }),
+        el('h2', { text: 'Topological semantics — S4 as geometry' }),
+        el('p', { text: 'The McKinsey–Tarski theorem: S4 is exactly the modal logic of topological spaces, with □ read as topological interior and ◇ as closure. Open sets play the role of "necessity": int A ⊆ A gives axiom T, and int(int A) = int A gives axiom 4. Paint the proposition p over a finite space and watch its interior, closure, and boundary.' })));
+      var body = el('div.module-body'); stage.appendChild(body);
+
+      var split = el('div.split'); body.appendChild(split);
+      var cw = el('div.canvas-card'); canvas = el('canvas'); cw.appendChild(canvas); split.appendChild(cw);
+      ctx = canvas.getContext('2d');
+      canvas.addEventListener('click', function (ev) {
+        var r = canvas.getBoundingClientRect(), x = ev.clientX - r.left, y = ev.clientY - r.top;
+        X.forEach(function (k) { if (Math.hypot(pos[k][0] - x, pos[k][1] - y) < 18) { P[k] = !P[k]; } });
+        recompute();
+      });
+
+      var col = el('div.grid', { style: { gridTemplateColumns: '1fr' } }); split.appendChild(col);
+
+      var lc = el('div.card'); lc.appendChild(el('h4', { text: 'S4 laws on this space' }));
+      refs.laws = el('div'); lc.appendChild(refs.laws); col.appendChild(lc);
+
+      var sc = el('div.card'); sc.appendChild(el('h4', { text: 'computed sets' }));
+      refs.sets = el('div'); sc.appendChild(refs.sets); col.appendChild(sc);
+
+      var tc = el('div.card'); tc.appendChild(el('h4', { text: 'the topology τ' }));
+      var lst = X.length;
+      tc.appendChild(el('p.muted', { style: { fontSize: '12px' } },
+        el('span', { text: 'X = {x₀,…,x₄}, generated by basic opens U={x₀,x₁,x₂}, V={x₂,x₃,x₄}. ' }),
+        el('span', { text: 'τ has ' + tau.length + ' open sets (the dashed regions plus all ∪/∩ of them). x₂ is the only point in every open containing 0–2 or 2–4 — the topological "glue".' })));
+      col.appendChild(tc);
+
+      var bridge = el('div.card'); bridge.appendChild(el('h4', { text: 'bridge to Module I' }));
+      bridge.appendChild(el('p.muted', { style: { fontSize: '12.5px' } },
+        'Every reflexive-transitive (S4) Kripke frame is an Alexandrov space: let the open sets be the R-upward-closed sets. Then int A = {w : R(w) ⊆ A} = □A and cl A = {w : R(w) ∩ A ≠ ∅} = ◇A. Modal box and topological interior are literally the same operator.'));
+      col.appendChild(bridge);
+
+      window.addEventListener('resize', function () { resize(); });
+      setTimeout(resize, 30);
+    }
+    return { mount: mount };
+  }
+
+  LV.register({ id: 'topology', no: 'II', title: 'Topology', sub: 'Interior = □, closure = ◇', create: mod });
+})();
+
+/* ===== js/m3-agents.js ===== */
+/* ===========================================================================
+   m3-agents.js — AI agent foundations
+   Multi-agent epistemic logic: each agent i has an indistinguishability
+   relation ~_i (an equivalence). K_i φ = φ holds at every world i can't
+   distinguish from the actual one. Group operators: C (common knowledge,
+   the reflexive-transitive closure of the union of the ~_i) and D
+   (distributed knowledge, the intersection). Public announcement φ! is the
+   core dynamic-epistemic update: delete every world where φ is false, then
+   re-evaluate. This is the engine behind puzzles like the muddy children and
+   underlies multi-agent coordination in AI.
+   ========================================================================= */
+(function () {
+  'use strict';
+  var el = LV.el;
+
+  function mod() {
+    var refs = {}, canvas, ctx;
+    var nAgents = 2;
+    var worlds = [], edges = [], actual = 0; // edges: {from,to,agent}
+    var sel = null, tool = 'move', dragging = null, dox = 0, doy = 0, mx = 0, my = 0;
+    var relAgent = 1, relSrc = null;
+    var R = 26;
+    var AGCOL = ['', null, null, null]; // filled from theme each draw
+
+    function agentColor(a, C) {
+      return [null, C.accent, C.accent2, C.accent3, C.gold][a] || C.muted;
+    }
+
+    function presetMuddy() {
+      // Two children, each muddy or clean -> 4 worlds = bit strings 11,10,01,00 (a=child1,b=child2 muddy)
+      worlds = []; edges = [];
+      var coords = [[170, 110], [410, 110], [170, 270], [410, 270]];
+      var bits = [[1, 1], [1, 0], [0, 1], [0, 0]];
+      bits.forEach(function (b, i) {
+        worlds.push({ id: i, x: coords[i][0], y: coords[i][1], label: b.join(''), val: { a: b[0], b: b[1] } });
+      });
+      // child 1 sees child 2's forehead but not own -> ~1 links worlds differing only in 'a'
+      // child 2 sees child 1 -> ~2 links worlds differing only in 'b'
+      function eq(i, j, agent) { edges.push({ from: i, to: j, agent: agent }); edges.push({ from: j, to: i, agent: agent }); }
+      worlds.forEach(function (w) { edges.push({ from: w.id, to: w.id, agent: 1 }); edges.push({ from: w.id, to: w.id, agent: 2 }); });
+      // agent 1 cannot tell own bit a: link worlds same b, diff a -> (11,01),(10,00)
+      eq(0, 2, 1); eq(1, 3, 1);
+      // agent 2 cannot tell own bit b: link worlds same a, diff b -> (11,10),(01,00)
+      eq(0, 1, 2); eq(2, 3, 2);
+      actual = 0; sel = null;
+      refresh();
+    }
+
+    function interp() {
+      return {
+        atom: function (n, w) { var ww = worlds.find(function (x) { return x.id === w; }); return ww && ww.val[n]; },
+        box: function (child, w) { return LV.rel.succ(edges, w).every(child); }, // generic □ = everyone? use union
+        K: function (ag, child, w) { return LV.rel.succ(edges, w, ag).every(child); },
+        C: function (child, w) {
+          var ags = []; for (var i = 1; i <= nAgents; i++) ags.push(i);
+          var ids = worlds.map(function (x) { return x.id; });
+          return LV.rel.reach(ids, edges, w, ags).every(child);
+        },
+        D: function (child, w) {
+          // distributed: worlds related by every agent's relation (intersection)
+          var ids = worlds.map(function (x) { return x.id; });
+          var inter = ids.filter(function (v) {
+            for (var a = 1; a <= nAgents; a++) if (!LV.rel.has(edges, w, v, a)) return false;
+            return true;
+          });
+          return inter.every(child);
+        }
+      };
+    }
+
+    function evaluate() {
+      var raw = refs.formula.value.trim(); LV.clear(refs.evalOut);
+      if (!raw || !worlds.length) { renderTruth(null); return; }
+      var ast; try { ast = LV.parse(raw); } catch (e) { refs.evalOut.appendChild(el('span.badge.b-no', { text: '⚠ ' + e.message })); return; }
+      var rows = worlds.map(function (w) { return { w: w, v: LV.evalAST(ast, w.id, interp()) }; });
+      var atActual = rows.find(function (r) { return r.w.id === actual; });
+      refs.evalOut.appendChild(el('span', { 'class': 'badge ' + (atActual && atActual.v ? 'b-ok' : 'b-no') },
+        (atActual && atActual.v ? '✓ true' : '✗ false') + ' at actual world ' + (worlds.find(function (w) { return w.id === actual; }) || {}).label));
+      renderTruth(rows); draw();
+    }
+
+    function renderTruth(rows) {
+      var p = refs.truth; LV.clear(p);
+      if (!rows) { p.appendChild(el('p.muted', { style: { fontSize: '12px' }, text: 'evaluate a formula' })); return; }
+      var t = el('table.tbl'); t.appendChild(el('tr', null, el('th', { text: 'world' }), el('th', { text: 'val' }), el('th', { text: 'φ' })));
+      rows.forEach(function (r) {
+        var v = Object.keys(r.w.val).filter(function (k) { return r.w.val[k]; }).join(',') || '∅';
+        var tr = el('tr', null, el('td', { text: r.w.label + (r.w.id === actual ? ' ◀' : '') }), el('td', { text: '{' + v + '}' }), el('td', { 'class': r.v ? 'tag-ok' : 'tag-no', text: r.v ? 'T' : 'F' }));
+        t.appendChild(tr);
+      });
+      p.appendChild(t);
+    }
+
+    function announce() {
+      var raw = refs.formula.value.trim(); if (!raw) return;
+      var ast; try { ast = LV.parse(raw); } catch (e) { return; }
+      var keep = worlds.filter(function (w) { return LV.evalAST(ast, w.id, interp()); });
+      var keepIds = keep.map(function (w) { return w.id; });
+      if (keepIds.indexOf(actual) < 0) {
+        refs.evalOut.appendChild(el('div.badge.b-warn', { style: { marginTop: '6px' }, text: 'cannot announce: false at the actual world' })); return;
+      }
+      worlds = keep;
+      edges = edges.filter(function (e) { return keepIds.indexOf(e.from) >= 0 && keepIds.indexOf(e.to) >= 0; });
+      refs.announceLog.appendChild(el('div', { style: { fontSize: '12px', fontFamily: 'var(--mono)', color: 'var(--accent2)' }, text: '! ' + LV.show(ast) + '  →  ' + worlds.length + ' worlds remain' }));
+      refresh();
+    }
+
+    function resize() { var w = canvas.parentElement.clientWidth; canvas.width = w; canvas.height = 380; draw(); }
+    function arrow(x, y, bx, by, color) {
+      var dx = x - bx, dy = y - by, l = Math.hypot(dx, dy) || 1, ux = dx / l, uy = dy / l, px = -uy, py = ux;
+      ctx.fillStyle = color; ctx.beginPath(); ctx.moveTo(x, y);
+      ctx.lineTo(x - ux * 8 + px * 3.5, y - uy * 8 + py * 3.5); ctx.lineTo(x - ux * 8 - px * 3.5, y - uy * 8 - py * 3.5); ctx.closePath(); ctx.fill();
+    }
+    function draw() {
+      if (!ctx) return; var C = LV.theme();
+      ctx.clearRect(0, 0, canvas.width, canvas.height); ctx.fillStyle = C.bg; ctx.fillRect(0, 0, canvas.width, canvas.height);
+      // edges, offset per agent so two agents' links don't overlap
+      edges.forEach(function (e) {
+        if (e.from === e.to) return;
+        var a = worlds.find(function (w) { return w.id === e.from; }), b = worlds.find(function (w) { return w.id === e.to; });
+        if (!a || !b || a.id > b.id) return; // draw once per undirected pair
+        var col = agentColor(e.agent, C);
+        var dx = b.x - a.x, dy = b.y - a.y, l = Math.hypot(dx, dy), ux = dx / l, uy = dy / l, nx = -uy, ny = ux;
+        var off = (e.agent - 1.5) * 7;
+        ctx.strokeStyle = col; ctx.lineWidth = 1.6;
+        ctx.beginPath(); ctx.moveTo(a.x + ux * R + nx * off, a.y + uy * R + ny * off); ctx.lineTo(b.x - ux * R + nx * off, b.y - uy * R + ny * off); ctx.stroke();
+      });
+      worlds.forEach(function (w) {
+        var isActual = w.id === actual, isSel = w.id === sel;
+        ctx.beginPath(); ctx.arc(w.x, w.y, R, 0, Math.PI * 2);
+        ctx.fillStyle = isActual ? C.warm : C.paper; ctx.fill();
+        ctx.lineWidth = isActual ? 3 : isSel ? 2.4 : 1.4; ctx.strokeStyle = isActual ? C.accent2 : isSel ? C.accent : C.gold; ctx.stroke();
+        ctx.fillStyle = C.ink; ctx.font = 'bold 12px JetBrains Mono, monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(w.label, w.x, w.y);
+      });
+      // legend
+      ctx.font = '11px JetBrains Mono'; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+      for (var i = 1; i <= nAgents; i++) { ctx.fillStyle = agentColor(i, C); ctx.fillText('— agent ' + i, 18 + (i - 1) * 92, 360); }
+      ctx.fillStyle = C.accent2; ctx.fillText('◀ actual', 18 + nAgents * 92, 360);
+    }
+
+    function setTool(t) { tool = t; relSrc = null; Array.prototype.forEach.call(refs.tools.children, function (b) { if (b.dataset.tool) b.classList.toggle('active', b.dataset.tool === t); }); }
+    function refresh() { renderProps(); evaluate(); draw(); }
+
+    function renderProps() {
+      var p = refs.props; LV.clear(p);
+      var w = worlds.find(function (x) { return x.id === sel; });
+      if (!w) { p.appendChild(el('p.muted', { style: { fontSize: '12px' }, text: 'click a world to set it actual / edit' })); return; }
+      p.appendChild(el('div.mono', { style: { fontSize: '12px', color: 'var(--accent)', marginBottom: '6px' }, text: 'World ' + w.label }));
+      var setBtn = el('button.btn', { text: w.id === actual ? '★ is actual' : 'set as actual' });
+      setBtn.addEventListener('click', function () { actual = w.id; refresh(); });
+      p.appendChild(setBtn);
+      p.appendChild(el('div', { style: { marginTop: '8px' } }));
+      ['a', 'b'].forEach(function (k) {
+        var cb = el('input', { type: 'checkbox' }); cb.checked = !!w.val[k];
+        cb.addEventListener('change', function () { w.val[k] = cb.checked ? 1 : 0; evaluate(); });
+        p.appendChild(el('label', { style: { display: 'flex', gap: '8px', alignItems: 'center', fontFamily: 'var(--mono)', fontSize: '12px', marginTop: '4px' } }, cb, el('span', { text: k }), el('span.muted', { text: w.val[k] ? 'T' : 'F' })));
+      });
+    }
+
+    function mount(stage) {
+      LV.clear(stage);
+      stage.appendChild(el('div.module-head', null,
+        el('div.kicker', { text: 'Module III · multi-agent epistemics' }),
+        el('h2', { text: 'AI agent foundations — knowledge among many minds' }),
+        el('p', { text: 'Each agent has its own indistinguishability relation; Kᵢφ means agent i knows φ. Common knowledge Cφ ("everyone knows that everyone knows…") is the closure that makes coordination possible, and a public announcement φ! updates the model by deleting worlds where φ is false. These are the primitives behind protocol reasoning, mechanism design, and multi-agent RL.' })));
+      var body = el('div.module-body'); stage.appendChild(body);
+
+      var tools = el('div.btn-row', { style: { marginBottom: '14px' } });
+      [['move', '✥ move'], ['actual', '★ set actual'], ['delete', '⌫ delete']].forEach(function (t) {
+        var b = el('button.btn', { text: t[1] }); b.dataset.tool = t[0]; b.addEventListener('click', function () { setTool(t[0]); }); tools.appendChild(b);
+      });
+      tools.appendChild(el('span', { style: { width: '12px' } }));
+      var pmuddy = el('button.btn', { text: 'preset: muddy children' }); pmuddy.addEventListener('click', presetMuddy); tools.appendChild(pmuddy);
+      refs.tools = tools; body.appendChild(tools);
+
+      var split = el('div.split'); body.appendChild(split);
+      var cw = el('div.canvas-card'); canvas = el('canvas'); cw.appendChild(canvas); split.appendChild(cw); ctx = canvas.getContext('2d');
+      canvas.addEventListener('mousedown', onDown); canvas.addEventListener('mousemove', onMove); window.addEventListener('mouseup', function () { dragging = null; });
+
+      var col = el('div.grid', { style: { gridTemplateColumns: '1fr' } }); split.appendChild(col);
+
+      var fc = el('div.card'); fc.appendChild(el('h4', { text: 'epistemic formula' }));
+      refs.formula = el('input', { type: 'text', value: 'K₁(a ∨ b) ∧ ¬K₁a', style: { width: '100%' } });
+      var fr = el('div.btn-row'); fr.appendChild(refs.formula);
+      var eb = el('button.btn.primary', { text: 'eval' }); eb.addEventListener('click', evaluate); fr.appendChild(eb);
+      fc.appendChild(fr);
+      var sr = el('div.symrow'); 'K₁ K₂ C D ¬ ∧ ∨ → ↔'.split(' ').forEach(function (s) { var b = el('button.sym', { text: s }); b.addEventListener('click', function () { refs.formula.value += s; refs.formula.focus(); }); sr.appendChild(b); });
+      fc.appendChild(sr);
+      refs.evalOut = el('div', { style: { marginTop: '10px' } }); fc.appendChild(refs.evalOut);
+      var ab = el('button.btn', { text: '📢 announce φ!  (public update)', style: { marginTop: '10px' } }); ab.addEventListener('click', announce); fc.appendChild(ab);
+      col.appendChild(fc);
+
+      var pc = el('div.card'); pc.appendChild(el('h4', { text: 'selected world' })); refs.props = el('div'); pc.appendChild(refs.props); col.appendChild(pc);
+      var tc = el('div.card'); tc.appendChild(el('h4', { text: 'truth at worlds' })); refs.truth = el('div'); tc.appendChild(refs.truth); col.appendChild(tc);
+      var lc = el('div.card'); lc.appendChild(el('h4', { text: 'announcement history' })); refs.announceLog = el('div'); lc.appendChild(refs.announceLog); col.appendChild(lc);
+
+      var note = el('div.card');
+      note.appendChild(el('h4', { text: 'try the muddy children' }));
+      note.appendChild(el('p.muted', { style: { fontSize: '12.5px' } },
+        'Load the preset. World "11" (both muddy) is actual. Father announces "at least one of you is muddy" — announce a ∨ b (nothing changes; it was common knowledge if both visibly muddy, but world 00 is removed). Then announce that nobody yet knows their own state: ¬K₁a ∧ ¬K₂b. Worlds collapse until each child can deduce their own muddiness. This is epistemic reasoning made mechanical.'));
+      col.appendChild(note);
+
+      window.addEventListener('resize', function () { resize(); });
+      setTimeout(function () { resize(); presetMuddy(); refs.formula.value = 'K₁(a ∨ b) ∧ ¬K₁a'; evaluate(); }, 30);
+    }
+
+    function worldAt(x, y) { for (var i = worlds.length - 1; i >= 0; i--) if (Math.hypot(worlds[i].x - x, worlds[i].y - y) < R) return worlds[i]; return null; }
+    function onDown(ev) {
+      var r = canvas.getBoundingClientRect(), x = ev.clientX - r.left, y = ev.clientY - r.top, hit = worldAt(x, y);
+      if (!hit) return;
+      if (tool === 'actual') { actual = hit.id; sel = hit.id; refresh(); }
+      else if (tool === 'delete') { worlds = worlds.filter(function (w) { return w.id !== hit.id; }); edges = edges.filter(function (e) { return e.from !== hit.id && e.to !== hit.id; }); refresh(); }
+      else { sel = hit.id; dragging = hit.id; dox = x - hit.x; doy = y - hit.y; renderProps(); draw(); }
+    }
+    function onMove(ev) {
+      var r = canvas.getBoundingClientRect(); mx = ev.clientX - r.left; my = ev.clientY - r.top;
+      if (dragging != null) { var w = worlds.find(function (x) { return x.id === dragging; }); if (w) { w.x = mx - dox; w.y = my - doy; } draw(); }
+    }
+
+    return { mount: mount };
+  }
+
+  LV.register({ id: 'agents', no: 'III', title: 'Agent foundations', sub: 'Common knowledge · announcements', create: mod });
+})();
+
+/* ===== js/m4-decision.js ===== */
+/* ===========================================================================
+   m4-decision.js — Decision theory
+   (1) A general expected-utility calculator over an acts × states matrix.
+   (2) Newcomb's problem, the canonical case where evidential and causal
+       decision theory diverge: EDT one-boxes (your choice is evidence about
+       the predictor's already-made prediction); CDT two-boxes (dominance —
+       the choice cannot causally change a sealed box). A slider over predictor
+       accuracy shows exactly where the two theories disagree, with a nod to
+       the functional decision theory used in modern AI agent-foundations work.
+   ========================================================================= */
+(function () {
+  'use strict';
+  var el = LV.el;
+
+  function bar(label, value, max, win) {
+    var pct = max > 0 ? Math.max(0, value / max) * 100 : 0;
+    var fill = el('div', { 'class': 'bar-fill' + (win ? ' win' : '') }); fill.style.width = pct.toFixed(1) + '%';
+    return el('div', { style: { marginBottom: '8px' } },
+      el('div', { style: { display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--mono)', fontSize: '12px', marginBottom: '3px' } },
+        el('span', { text: label }), el('span', { style: { fontWeight: '600' }, text: '$' + Math.round(value).toLocaleString() })),
+      el('div.bar-track', null, fill));
+  }
+
+  function mod() {
+    var refs = {};
+
+    /* ---- (1) generic EU calculator ---- */
+    // 2 acts × 2 states default; editable utilities + state probabilities
+    var euState = { p: 0.5, U: [[100, 0], [40, 40]], actNames: ['risky', 'safe'], stateNames: ['boom', 'bust'] };
+
+    function renderEU() {
+      var s = euState; var pane = refs.eu; LV.clear(pane);
+      var probs = [s.p, 1 - s.p];
+      // matrix table with editable utilities
+      var t = el('table.tbl');
+      var head = el('tr', null, el('th', { text: 'act \\ state' }));
+      s.stateNames.forEach(function (n, j) { head.appendChild(el('th', { text: n + ' (' + (probs[j] * 100).toFixed(0) + '%)' })); });
+      head.appendChild(el('th', { text: 'EU' }));
+      t.appendChild(head);
+      var eus = s.U.map(function (row) { return row.reduce(function (a, u, j) { return a + probs[j] * u; }, 0); });
+      var best = eus.indexOf(Math.max.apply(null, eus));
+      s.U.forEach(function (row, i) {
+        var tr = el('tr', null, el('td', { text: s.actNames[i] }));
+        row.forEach(function (u, j) {
+          var inp = el('input', { type: 'number', value: u, style: { width: '64px', padding: '3px 6px' } });
+          inp.addEventListener('input', function () { s.U[i][j] = parseFloat(inp.value) || 0; renderEU(); });
+          tr.appendChild(el('td', null, inp));
+        });
+        tr.appendChild(el('td', { 'class': i === best ? 'tag-ok' : '', text: Math.round(eus[i]).toLocaleString() + (i === best ? ' ◀' : '') }));
+        t.appendChild(tr);
+      });
+      pane.appendChild(t);
+      pane.appendChild(el('div', { style: { marginTop: '12px' } },
+        el('label.lab', { text: 'P(' + s.stateNames[0] + ') = ' + (s.p * 100).toFixed(0) + '%' })));
+      var slider = el('input', { type: 'range', min: '0', max: '100', value: String(s.p * 100) });
+      slider.addEventListener('input', function () { s.p = parseInt(slider.value, 10) / 100; renderEU(); });
+      pane.appendChild(slider);
+      pane.appendChild(el('p.muted', { style: { fontSize: '12px', marginTop: '8px' } },
+        'EU(act) = Σ P(state)·U(act,state). The recommended act maximises expected utility under the probability distribution.'));
+    }
+
+    /* ---- (2) Newcomb ---- */
+    var newcomb = { acc: 0.9, prior: 0.5 };
+    var OPAQUE = 1000000, TRANSPARENT = 1000;
+
+    function renderNewcomb() {
+      var a = newcomb.acc; var pane = refs.newcomb; LV.clear(pane);
+      // Payoffs: B = opaque box ($1M if predicted one-box, else $0); A = transparent ($1000, always taken if two-boxing)
+      // EDT: condition on the act. P(million | one-box) = acc ; P(million | two-box) = 1 - acc
+      var eu_one_EDT = a * OPAQUE + (1 - a) * 0;                 // one-box: take only B
+      var eu_two_EDT = a * 0 + (1 - a) * OPAQUE + TRANSPARENT;   // two-box: B is likely empty + always get A
+      // CDT: the prediction is already fixed with prior probability p of "million present"; act can't change it.
+      var p = newcomb.prior;
+      var eu_one_CDT = p * OPAQUE + (1 - p) * 0;
+      var eu_two_CDT = p * (OPAQUE + TRANSPARENT) + (1 - p) * (0 + TRANSPARENT); // dominance: +1000 in both columns
+      var edtPick = eu_one_EDT >= eu_two_EDT ? 'one-box' : 'two-box';
+      var cdtPick = eu_one_CDT >= eu_two_CDT ? 'one-box' : 'two-box';
+
+      // controls
+      pane.appendChild(el('label.lab', { text: 'predictor accuracy = ' + (a * 100).toFixed(0) + '%' }));
+      var sl = el('input', { type: 'range', min: '50', max: '100', value: String(a * 100) });
+      sl.addEventListener('input', function () { newcomb.acc = parseInt(sl.value, 10) / 100; renderNewcomb(); });
+      pane.appendChild(sl);
+
+      // two theory cards
+      var cols = el('div.split-even', { style: { marginTop: '14px' } });
+      var edt = el('div.card', { style: { background: 'var(--paper)' } });
+      edt.appendChild(el('h4', { text: 'Evidential DT' }));
+      edt.appendChild(el('p.muted', { style: { fontSize: '11.5px', marginBottom: '10px' } }, 'conditions on the act as evidence about the prediction'));
+      edt.appendChild(bar('one-box', eu_one_EDT, OPAQUE + TRANSPARENT, edtPick === 'one-box'));
+      edt.appendChild(bar('two-box', eu_two_EDT, OPAQUE + TRANSPARENT, edtPick === 'two-box'));
+      edt.appendChild(el('div', { style: { marginTop: '8px' } }, el('span.badge.b-info', { text: 'recommends: ' + edtPick })));
+      cols.appendChild(edt);
+
+      var cdt = el('div.card', { style: { background: 'var(--paper)' } });
+      cdt.appendChild(el('h4', { text: 'Causal DT' }));
+      cdt.appendChild(el('p.muted', { style: { fontSize: '11.5px', marginBottom: '10px' } }, 'box is sealed; choice cannot cause its contents — dominance rules'));
+      cdt.appendChild(bar('one-box', eu_one_CDT, OPAQUE + TRANSPARENT, cdtPick === 'one-box'));
+      cdt.appendChild(bar('two-box', eu_two_CDT, OPAQUE + TRANSPARENT, cdtPick === 'two-box'));
+      cdt.appendChild(el('div', { style: { marginTop: '8px' } }, el('span.badge.b-info', { text: 'recommends: ' + cdtPick })));
+      cols.appendChild(cdt);
+      pane.appendChild(cols);
+
+      // verdict
+      var conflict = edtPick !== cdtPick;
+      pane.appendChild(el('div', { style: { marginTop: '14px' } },
+        el('span', { 'class': 'badge ' + (conflict ? 'b-warn' : 'b-ok') },
+          conflict ? '⚔ the theories disagree at this accuracy' : 'the theories agree here')));
+      pane.appendChild(el('p.muted', { style: { fontSize: '12px', marginTop: '8px' } },
+        'CDT two-boxes for any accuracy above chance (two-boxing strictly dominates: it adds $1,000 whatever the box holds). EDT one-boxes once accuracy clears the break-even point near 50.05%. The empirical fact that committed one-boxers walk away with $1,000,000 is what motivates functional decision theory (FDT) — choosing the decision procedure a predictor would have already modelled, central to AI agent-foundations research.'));
+    }
+
+    function mount(stage) {
+      LV.clear(stage);
+      stage.appendChild(el('div.module-head', null,
+        el('div.kicker', { text: 'Module IV · rational choice' }),
+        el('h2', { text: 'Decision theory — from knowledge to action' }),
+        el('p', { text: 'Once an agent represents the world (Modules I–III), it must choose. Expected-utility theory ranks acts by Σ P(state)·U(act,state). But "probability of what, given what?" splits the field: evidential decision theory conditions on the act; causal decision theory asks only what the act brings about. Newcomb\u2019s problem is where they part ways.' })));
+      var body = el('div.module-body'); stage.appendChild(body);
+
+      var g = el('div.grid', { style: { gridTemplateColumns: '1fr' } }); body.appendChild(g);
+
+      var c1 = el('div.card'); c1.appendChild(el('h3', { text: 'Expected-utility calculator' }));
+      refs.eu = el('div'); c1.appendChild(refs.eu); g.appendChild(c1);
+
+      var c2 = el('div.card'); c2.appendChild(el('h3', { text: 'Newcomb\u2019s problem — EDT vs CDT' }));
+      c2.appendChild(el('p.muted', { style: { fontSize: '12.5px', marginBottom: '6px' } },
+        'A reliable predictor has already placed $1,000,000 in the opaque box if and only if it predicted you would take only that box; the transparent box always holds $1,000. Do you take one box or both?'));
+      refs.newcomb = el('div'); c2.appendChild(refs.newcomb); g.appendChild(c2);
+
+      renderEU(); renderNewcomb();
+    }
+    return { mount: mount };
+  }
+
+  LV.register({ id: 'decision', no: 'IV', title: 'Decision theory', sub: 'Expected utility · Newcomb', create: mod });
+})();
+
+/* ===== js/m6-games.js ===== */
+/* ===========================================================================
+   m6-games.js — Game theory: Nash equilibrium
+   A 2x2 bimatrix game. Each cell holds (row payoff, column payoff). The tool
+   marks best responses, finds every pure-strategy Nash equilibrium (a cell
+   where neither player can profitably deviate), computes the mixed-strategy
+   equilibrium, and flags strictly dominant strategies. This is where the
+   single-agent decision theory of Module IV becomes genuinely strategic:
+   the best act now depends on what the other rational agent does.
+   ========================================================================= */
+(function () {
+  'use strict';
+  var el = LV.el;
+
+  // payoff[i][j] = [rowPayoff, colPayoff]; i in {0:T,1:B}, j in {0:L,1:R}
+  var PRESETS = {
+    pd: { name: "Prisoner's Dilemma", rows: ['Cooperate', 'Defect'], cols: ['Cooperate', 'Defect'],
+      P: [[[3, 3], [0, 5]], [[5, 0], [1, 1]]] },
+    stag: { name: 'Stag Hunt', rows: ['Stag', 'Hare'], cols: ['Stag', 'Hare'],
+      P: [[[4, 4], [0, 3]], [[3, 0], [3, 3]]] },
+    bos: { name: 'Battle of the Sexes', rows: ['Opera', 'Football'], cols: ['Opera', 'Football'],
+      P: [[[2, 1], [0, 0]], [[0, 0], [1, 2]]] },
+    mp: { name: 'Matching Pennies', rows: ['Heads', 'Tails'], cols: ['Heads', 'Tails'],
+      P: [[[1, -1], [-1, 1]], [[-1, 1], [1, -1]]] },
+    chicken: { name: 'Chicken', rows: ['Swerve', 'Straight'], cols: ['Swerve', 'Straight'],
+      P: [[[0, 0], [-1, 1]], [[1, -1], [-10, -10]]] }
+  };
+
+  function mod() {
+    var refs = {};
+    var g = clone(PRESETS.pd);
+
+    function clone(x) { return JSON.parse(JSON.stringify(x)); }
+
+    function pureNE() {
+      var P = g.P, ne = [];
+      // row best responses to each column j
+      for (var j = 0; j < 2; j++) {
+        var rb = P[0][j][0] >= P[1][j][0] ? 0 : 1;
+        var rbest = [P[0][j][0] === Math.max(P[0][j][0], P[1][j][0]),
+                     P[1][j][0] === Math.max(P[0][j][0], P[1][j][0])];
+        g._rowBR = g._rowBR || [[false, false], [false, false]];
+        g._rowBR[0][j] = rbest[0]; g._rowBR[1][j] = rbest[1];
+      }
+      // col best responses to each row i
+      for (var i = 0; i < 2; i++) {
+        var cmax = Math.max(P[i][0][1], P[i][1][1]);
+        g._colBR = g._colBR || [[false, false], [false, false]];
+        g._colBR[i][0] = P[i][0][1] === cmax; g._colBR[i][1] = P[i][1][1] === cmax;
+      }
+      for (i = 0; i < 2; i++) for (j = 0; j < 2; j++)
+        if (g._rowBR[i][j] && g._colBR[i][j]) ne.push([i, j]);
+      return ne;
+    }
+
+    function mixedNE() {
+      var P = g.P;
+      var a = P[0][0][0], b = P[0][1][0], c = P[1][0][0], d = P[1][1][0]; // row payoffs
+      var e = P[0][0][1], f = P[0][1][1], gg = P[1][0][1], h = P[1][1][1]; // col payoffs
+      var qd = (a - b - c + d), pd_ = (e - f - gg + h);
+      var q = qd !== 0 ? (d - b) / qd : null;   // prob Col plays L
+      var p = pd_ !== 0 ? (h - gg) / pd_ : null; // prob Row plays T
+      var ok = p != null && q != null && p > 0 && p < 1 && q > 0 && q < 1;
+      return { p: p, q: q, ok: ok };
+    }
+
+    function dominant() {
+      var P = g.P, out = [];
+      // row: does T strictly dominate B or vice versa?
+      if (P[0][0][0] > P[1][0][0] && P[0][1][0] > P[1][1][0]) out.push('Row: ' + g.rows[0] + ' strictly dominant');
+      if (P[1][0][0] > P[0][0][0] && P[1][1][0] > P[0][1][0]) out.push('Row: ' + g.rows[1] + ' strictly dominant');
+      if (P[0][0][1] > P[0][1][1] && P[1][0][1] > P[1][1][1]) out.push('Col: ' + g.cols[0] + ' strictly dominant');
+      if (P[0][1][1] > P[0][0][1] && P[1][1][1] > P[1][0][1]) out.push('Col: ' + g.cols[1] + ' strictly dominant');
+      return out;
+    }
+
+    function render() {
+      var ne = pureNE();
+      var isNE = function (i, j) { return ne.some(function (c) { return c[0] === i && c[1] === j; }); };
+      // matrix
+      var pane = refs.matrix; LV.clear(pane);
+      var t = el('table.tbl', { style: { fontSize: '13px' } });
+      var head = el('tr', null, el('th', { text: '' }), el('th', { text: g.cols[0] }), el('th', { text: g.cols[1] }));
+      t.appendChild(head);
+      for (var i = 0; i < 2; i++) {
+        var tr = el('tr', null, el('th', { text: g.rows[i] }));
+        for (var j = 0; j < 2; j++) (function (i, j) {
+          var cell = el('td', { style: { textAlign: 'center', padding: '8px', borderRadius: '6px' } });
+          if (isNE(i, j)) { cell.style.outline = '2px solid var(--accent)'; cell.style.background = 'rgba(47,44,214,.07)'; }
+          var rIn = el('input', { type: 'number', value: g.P[i][j][0], style: { width: '46px', padding: '2px 4px', color: 'var(--accent)', fontWeight: g._rowBR[i][j] ? '700' : '400', borderColor: g._rowBR[i][j] ? 'var(--accent)' : 'var(--rule)' } });
+          rIn.addEventListener('input', function () { g.P[i][j][0] = parseFloat(rIn.value) || 0; render(); });
+          var cIn = el('input', { type: 'number', value: g.P[i][j][1], style: { width: '46px', padding: '2px 4px', color: 'var(--accent2)', fontWeight: g._colBR[i][j] ? '700' : '400', borderColor: g._colBR[i][j] ? 'var(--accent2)' : 'var(--rule)' } });
+          cIn.addEventListener('input', function () { g.P[i][j][1] = parseFloat(cIn.value) || 0; render(); });
+          cell.appendChild(el('div', { style: { display: 'flex', gap: '4px', justifyContent: 'center', alignItems: 'center' } }, rIn, el('span', { style: { color: 'var(--muted)' }, text: ',' }), cIn));
+          if (isNE(i, j)) cell.appendChild(el('div', { style: { marginTop: '4px' } }, el('span.badge.b-info', { text: 'NE' })));
+          tr.appendChild(cell);
+        })(i, j);
+        t.appendChild(tr);
+      }
+      pane.appendChild(t);
+      pane.appendChild(el('p.muted', { style: { fontSize: '11.5px', marginTop: '8px' } },
+        'Bold + coloured outline = a best response (cobalt = Row, vermilion = Column). A cell where both are best responses is a pure-strategy Nash equilibrium.'));
+
+      // results
+      var R = refs.results; LV.clear(R);
+      R.appendChild(el('h4', { text: 'pure-strategy equilibria' }));
+      if (ne.length) ne.forEach(function (c) {
+        R.appendChild(el('div', { style: { marginBottom: '4px' } },
+          el('span.badge.b-ok', { text: '(' + g.rows[c[0]] + ', ' + g.cols[c[1]] + ')' }),
+          el('span.muted', { style: { fontSize: '12px', marginLeft: '8px' }, text: 'payoff (' + g.P[c[0]][c[1]][0] + ', ' + g.P[c[0]][c[1]][1] + ')' })));
+      });
+      else R.appendChild(el('p.muted', { style: { fontSize: '12.5px' }, text: 'none in pure strategies — look to the mixed equilibrium.' }));
+
+      var m = mixedNE();
+      R.appendChild(el('h4', { text: 'mixed-strategy equilibrium', style: { marginTop: '14px' } }));
+      if (m.ok) {
+        R.appendChild(el('p', { style: { fontSize: '13px' } },
+          'Row plays ', el('b', { text: g.rows[0] }), ' with p = ', el('b', { text: m.p.toFixed(2) }),
+          ', Column plays ', el('b', { text: g.cols[0] }), ' with q = ', el('b', { text: m.q.toFixed(2) }), '.'));
+        R.appendChild(el('p.muted', { style: { fontSize: '11.5px' } }, 'Each player mixes precisely so as to leave the other indifferent — the hallmark of a mixed equilibrium.'));
+      } else R.appendChild(el('p.muted', { style: { fontSize: '12.5px' }, text: 'no fully-mixed equilibrium (the indifference conditions have no interior solution here).' }));
+
+      var dom = dominant();
+      if (dom.length) {
+        R.appendChild(el('h4', { text: 'dominant strategies', style: { marginTop: '14px' } }));
+        dom.forEach(function (d) { R.appendChild(el('div', { style: { fontSize: '12.5px' } }, el('span.badge.b-warn', { text: d }))); });
+      }
+    }
+
+    function loadPreset(k) {
+      var pr = PRESETS[k];
+      g = clone(pr); render();
+      refs.title.textContent = pr.name;
+    }
+
+    function mount(stage) {
+      LV.clear(stage);
+      stage.appendChild(el('div.module-head', null,
+        el('div.kicker', { text: 'Module V · strategic interaction' }),
+        el('h2', { text: 'Game theory — Nash equilibrium' }),
+        el('p', { text: 'Decision theory asked what a lone agent should do. Now the payoff of your choice depends on another rational agent\u2019s choice, and vice versa. A Nash equilibrium is a profile from which no one can profitably deviate. Edit any payoff, or load a classic game, and watch the best responses and equilibria recompute.' })));
+      var body = el('div.module-body'); stage.appendChild(body);
+
+      var pr = el('div.btn-row', { style: { marginBottom: '16px' } });
+      pr.appendChild(el('span.mono', { style: { fontSize: '11px', color: 'var(--muted)', marginRight: '4px' }, text: 'load:' }));
+      Object.keys(PRESETS).forEach(function (k) {
+        var b = el('button.btn', { text: PRESETS[k].name }); b.addEventListener('click', function () { loadPreset(k); }); pr.appendChild(b);
+      });
+      body.appendChild(pr);
+
+      var split = el('div.split-even');
+      var left = el('div.card');
+      left.appendChild(el('h3', null, refs.title = el('span', { text: g.name })));
+      left.appendChild(el('p.muted', { style: { fontSize: '12px', marginBottom: '10px' } }, 'Row chooses a row, Column a column. Each cell: (Row payoff, Column payoff).'));
+      refs.matrix = el('div'); left.appendChild(refs.matrix);
+      split.appendChild(left);
+
+      var right = el('div.card');
+      refs.results = el('div'); right.appendChild(refs.results);
+      split.appendChild(right);
+      body.appendChild(split);
+
+      body.appendChild(el('div.card', { style: { marginTop: '20px' } },
+        el('h4', { text: 'why it matters' }),
+        el('p.muted', { style: { fontSize: '12.5px' } },
+          'The Prisoner\u2019s Dilemma\u2019s only equilibrium is mutual defection though both would prefer mutual cooperation — the gap between individual and collective rationality. Matching Pennies has no pure equilibrium at all, which is exactly why Nash\u2019s theorem guaranteeing a mixed equilibrium in every finite game is foundational. The next module measures the social cost of these equilibria.')));
+
+      render();
+    }
+    return { mount: mount };
+  }
+
+  LV.register({ id: 'games', no: 'V', title: 'Game theory', sub: 'Nash equilibrium · best response', create: mod });
+})();
+
+/* ===== js/m7-agt.js ===== */
+/* ===========================================================================
+   m7-agt.js — Algorithmic game theory
+   When many selfish agents route themselves through a shared network, the
+   equilibrium can be worse than the social optimum. The PRICE OF ANARCHY is
+   that ratio. Two canonical instances:
+     1. Pigou's example — selfish routing gives total cost 1 vs optimum 3/4,
+        so the price of anarchy is 4/3.
+     2. Braess's paradox — adding a fast road to a network can make EVERYONE
+        slower at equilibrium. The closed-form equilibria are computed and
+        drawn; the user toggles the extra road and watches latency rise.
+   ========================================================================= */
+(function () {
+  'use strict';
+  var el = LV.el;
+
+  function mod() {
+    var refs = {}, canvasP, ctxP, canvasB, ctxB;
+    var f = 1.0;          // Pigou: fraction of flow on the variable (x) edge
+    var braessEdge = true; // Braess: is the zero-cost shortcut present?
+
+    /* ---------- Pigou ---------- */
+    function pigouCost(frac) { return frac * frac + (1 - frac) * 1; } // f·ℓ_bottom + (1-f)·ℓ_top
+    function renderPigou() {
+      var cost = pigouCost(f);
+      var selfish = pigouCost(1);   // = 1
+      var optimum = pigouCost(0.5); // = 0.75
+      LV.clear(refs.pigouOut);
+      refs.pigouOut.appendChild(el('table.tbl', null,
+        row('your split — fraction on the x-edge', f.toFixed(2), 'var(--ink)'),
+        row('total latency at your split', cost.toFixed(3), 'var(--ink)'),
+        row('selfish equilibrium (all on x-edge)', selfish.toFixed(3), 'var(--accent2)'),
+        row('social optimum (split 50/50)', optimum.toFixed(3), 'var(--accent3)'),
+        row('price of anarchy = selfish / optimum', (selfish / optimum).toFixed(3) + '  (= 4/3)', 'var(--accent)')));
+      drawPigou(cost);
+    }
+    function row(k, v, c) { return el('tr', null, el('td', { text: k }), el('td', { style: { color: c, fontWeight: '600' }, text: v })); }
+
+    function drawPigou(cost) {
+      if (!ctxP) return; var C = LV.theme(), w = canvasP.width, h = canvasP.height;
+      ctxP.clearRect(0, 0, w, h); ctxP.fillStyle = C.bg; ctxP.fillRect(0, 0, w, h);
+      var s = [60, h / 2], t = [w - 60, h / 2];
+      // top edge (constant latency 1), bottom edge (latency = x)
+      edgeCurve(ctxP, s, t, -70, C, (1 - f), 'ℓ = 1  (constant)', '1.00', C.gold);
+      edgeCurve(ctxP, s, t, 70, C, f, 'ℓ = x  (congestible)', f.toFixed(2), C.accent2);
+      nodeP(ctxP, s, 's', C); nodeP(ctxP, t, 't', C);
+    }
+    function edgeCurve(ctx, s, t, bow, C, flow, label, lat, col) {
+      var mx = (s[0] + t[0]) / 2, my = (s[1] + t[1]) / 2 + bow;
+      ctx.strokeStyle = col; ctx.lineWidth = 2 + flow * 12; ctx.globalAlpha = .85;
+      ctx.beginPath(); ctx.moveTo(s[0], s[1]); ctx.quadraticCurveTo(mx, my, t[0], t[1]); ctx.stroke();
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = C.ink; ctx.font = '12px "IBM Plex Mono", monospace'; ctx.textAlign = 'center';
+      ctx.fillText(label, mx, my + (bow < 0 ? -10 : 22));
+      ctx.fillStyle = col; ctx.font = 'bold 12px "IBM Plex Mono", monospace';
+      ctx.fillText('latency ' + lat, mx, my + (bow < 0 ? 8 : -6));
+    }
+    function nodeP(ctx, p, label, C) {
+      ctx.beginPath(); ctx.arc(p[0], p[1], 22, 0, Math.PI * 2);
+      ctx.fillStyle = C.paper; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = C.accent; ctx.stroke();
+      ctx.fillStyle = C.ink; ctx.font = 'bold 15px Fraunces, serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(label, p[0], p[1]); ctx.textBaseline = 'alphabetic';
+    }
+
+    /* ---------- Braess ---------- */
+    // Nodes S,A,B,T. Edges S->A (x), S->B (1), A->T (1), B->T (x), A->B (0, optional).
+    function braessResult() {
+      if (!braessEdge) {
+        // split 1/2-1/2 over S->A->T and S->B->T; each route latency = 0.5 + 1 = 1.5
+        return { latency: 1.5, total: 1.5, route: 'half take S→A→T, half take S→B→T' };
+      }
+      // with shortcut everyone routes S->A->B->T: S->A flow 1 (lat 1), A->B (0), B->T flow 1 (lat 1) => 2
+      return { latency: 2.0, total: 2.0, route: 'everyone takes S→A→B→T' };
+    }
+    function renderBraess() {
+      var r = braessResult();
+      LV.clear(refs.braessOut);
+      refs.braessOut.appendChild(el('table.tbl', null,
+        row('shortcut A→B present?', braessEdge ? 'yes (latency 0)' : 'no', braessEdge ? 'var(--accent2)' : 'var(--muted)'),
+        row('equilibrium routing', r.route, 'var(--ink)'),
+        row('latency every driver experiences', r.latency.toFixed(2), braessEdge ? 'var(--accent2)' : 'var(--accent3)')));
+      var worse = braessEdge;
+      refs.braessOut.appendChild(el('div', { style: { marginTop: '10px' } },
+        el('span', { 'class': 'badge ' + (worse ? 'b-no' : 'b-ok'), text: worse ? '⚠ adding the road raised latency 1.50 → 2.00' : 'without the road, latency is 1.50' })));
+      drawBraess();
+    }
+    function drawBraess() {
+      if (!ctxB) return; var C = LV.theme(), w = canvasB.width, h = canvasB.height;
+      ctxB.clearRect(0, 0, w, h); ctxB.fillStyle = C.bg; ctxB.fillRect(0, 0, w, h);
+      var S = [60, h / 2], A = [w / 2, 60], B = [w / 2, h - 60], T = [w - 60, h / 2];
+      bEdge(S, A, 'x', C.accent2, C); bEdge(S, B, '1', C.gold, C);
+      bEdge(A, T, '1', C.gold, C); bEdge(B, T, 'x', C.accent2, C);
+      if (braessEdge) bEdge(A, B, '0', C.accent3, C);
+      else { // draw dashed ghost
+        ctxB.strokeStyle = C.rule; ctxB.setLineDash([5, 5]); ctxB.lineWidth = 1.5;
+        ctxB.beginPath(); ctxB.moveTo(A[0], A[1] + 24); ctxB.lineTo(B[0], B[1] - 24); ctxB.stroke(); ctxB.setLineDash([]);
+      }
+      [[S, 'S'], [A, 'A'], [B, 'B'], [T, 'T']].forEach(function (n) { nodeP(ctxB, n[0], n[1], C); });
+    }
+    function bEdge(p, q, lab, col, C) {
+      var dx = q[0] - p[0], dy = q[1] - p[1], l = Math.hypot(dx, dy), ux = dx / l, uy = dy / l;
+      var sx = p[0] + ux * 24, sy = p[1] + uy * 24, ex = q[0] - ux * 24, ey = q[1] - uy * 24;
+      ctxB.strokeStyle = col; ctxB.lineWidth = 2.4;
+      ctxB.beginPath(); ctxB.moveTo(sx, sy); ctxB.lineTo(ex, ey); ctxB.stroke();
+      // arrowhead
+      ctxB.fillStyle = col; ctxB.beginPath();
+      var px = -uy, py = ux;
+      ctxB.moveTo(ex, ey); ctxB.lineTo(ex - ux * 10 + px * 4, ey - uy * 10 + py * 4); ctxB.lineTo(ex - ux * 10 - px * 4, ey - uy * 10 - py * 4); ctxB.closePath(); ctxB.fill();
+      ctxB.fillStyle = C.ink; ctxB.font = 'bold 13px "IBM Plex Mono", monospace'; ctxB.textAlign = 'center';
+      ctxB.fillText('ℓ=' + lab, (sx + ex) / 2 + px * 12, (sy + ey) / 2 + py * 12 + 4);
+    }
+
+    function resize() {
+      [canvasP, canvasB].forEach(function (cv) { if (cv) { cv.width = cv.parentElement.clientWidth; cv.height = 240; } });
+      renderPigou(); renderBraess();
+    }
+
+    function mount(stage) {
+      LV.clear(stage);
+      stage.appendChild(el('div.module-head', null,
+        el('div.kicker', { text: 'Module VI · the cost of selfishness' }),
+        el('h2', { text: 'Algorithmic game theory — the price of anarchy' }),
+        el('p', { text: 'When self-interested agents share a network, their Nash equilibrium can be strictly worse than what a central planner would choose. The ratio between the two is the price of anarchy. Two classic instances show it — including Braess\u2019s paradox, where building a new road makes everyone slower.' })));
+      var body = el('div.module-body'); stage.appendChild(body);
+
+      // Pigou
+      var p1 = el('div.card', { style: { marginBottom: '22px' } });
+      p1.appendChild(el('h3', { text: '1 · Pigou\u2019s example — routing one unit of traffic from s to t' }));
+      p1.appendChild(el('p.muted', { style: { fontSize: '12.5px', marginBottom: '6px' } }, 'One road has constant latency 1; the other has latency equal to its load x. Drag the split and compare your total latency with the selfish equilibrium and the social optimum.'));
+      var cwP = el('div.canvas-card'); canvasP = el('canvas'); cwP.appendChild(canvasP); p1.appendChild(cwP); ctxP = canvasP.getContext('2d');
+      var sl = el('input', { type: 'range', min: '0', max: '100', value: '100', style: { marginTop: '12px' } });
+      sl.addEventListener('input', function () { f = parseInt(sl.value, 10) / 100; renderPigou(); });
+      p1.appendChild(el('label.lab', { text: 'fraction routed onto the congestible (x) edge' }));
+      p1.appendChild(sl);
+      refs.pigouOut = el('div', { style: { marginTop: '12px' } }); p1.appendChild(refs.pigouOut);
+      body.appendChild(p1);
+
+      // Braess
+      var p2 = el('div.card');
+      p2.appendChild(el('h3', { text: '2 · Braess\u2019s paradox — when a new road hurts everyone' }));
+      p2.appendChild(el('p.muted', { style: { fontSize: '12.5px', marginBottom: '6px' } }, 'Without the green shortcut, traffic splits evenly and every driver faces latency 1.5. Add the zero-cost shortcut and self-interest funnels everyone through it — pushing latency up to 2.0.'));
+      var cwB = el('div.canvas-card'); canvasB = el('canvas'); cwB.appendChild(canvasB); p2.appendChild(cwB); ctxB = canvasB.getContext('2d');
+      var tog = el('button.btn.primary', { text: 'remove the shortcut A→B', style: { marginTop: '12px' } });
+      tog.addEventListener('click', function () { braessEdge = !braessEdge; tog.textContent = braessEdge ? 'remove the shortcut A→B' : 'add the shortcut A→B'; renderBraess(); });
+      p2.appendChild(tog);
+      refs.braessOut = el('div', { style: { marginTop: '12px' } }); p2.appendChild(refs.braessOut);
+      body.appendChild(p2);
+
+      window.addEventListener('resize', function () { resize(); });
+      setTimeout(resize, 30);
+    }
+    return { mount: mount };
+  }
+
+  LV.register({ id: 'agt', no: 'VI', title: 'Algorithmic game theory', sub: 'Price of anarchy · Braess', create: mod });
+})();
+
+/* ===== js/m5-grammar.js ===== */
+/* ===========================================================================
+   m5-grammar.js — Gavagai → full grammar
+   Two faces of the same epistemological problem: data underdetermines theory.
+   (1) Quine's "gavagai": a single ostension is compatible with mutually
+       incompatible reference schemes (rabbit / undetached parts / time-slice /
+       rabbithood). Adding "experiments" fails to discriminate them — the
+       indeterminacy of translation.
+   (2) Grammar induction: from example strings, infer the language. Several
+       grammars stay consistent with any finite positive sample; only negative
+       evidence (or a built-in simplicity / subset bias — read: Universal
+       Grammar) forces convergence. This is Gold's theorem made tangible, and
+       the formal echo of the gavagai problem.
+   ========================================================================= */
+(function () {
+  'use strict';
+  var el = LV.el;
+
+  /* ---- candidate grammars over alphabet {a,b} ---- */
+  var GRAMMARS = [
+    { name: 'a*', desc: 'any run of a\u2019s', acc: function (s) { return /^a*$/.test(s); }, kind: 'regular' },
+    { name: 'a*b*', desc: 'a\u2019s then b\u2019s', acc: function (s) { return /^a*b*$/.test(s); }, kind: 'regular' },
+    { name: '(ab)*', desc: 'repeated ab', acc: function (s) { return /^(ab)*$/.test(s); }, kind: 'regular' },
+    { name: 'aⁿbⁿ', desc: 'equal a\u2019s then b\u2019s', acc: function (s) { return /^a*b*$/.test(s) && (s.match(/a/g) || []).length === (s.match(/b/g) || []).length; }, kind: 'context-free' },
+    { name: 'Σ*', desc: 'every string', acc: function (s) { return /^[ab]*$/.test(s); }, kind: 'regular (universal)' }
+  ];
+
+  // enumerate all strings over {a,b} up to length N — used to size each language
+  function corpus(N) {
+    var out = ['']; for (var len = 1; len <= N; len++) {
+      var prev = out.filter(function (x) { return x.length === len - 1; });
+      prev.forEach(function (p) { out.push(p + 'a'); out.push(p + 'b'); });
+    }
+    return out;
+  }
+  var CORP = corpus(6);
+
+  function mod() {
+    var refs = {};
+    var pos = ['', 'ab', 'aabb'], neg = []; // start consistent with several grammars
+
+    /* ---- gavagai hypotheses ---- */
+    var GAV = [
+      { name: 'rabbit', desc: 'the whole enduring animal' },
+      { name: 'undetached rabbit-parts', desc: 'the fused collection of parts' },
+      { name: 'rabbit time-slice', desc: 'a momentary stage of a rabbit' },
+      { name: 'rabbithood', desc: 'the abstract universal, instantiated here' },
+      { name: '\u201clo, dinner!\u201d', desc: 'a one-word observation sentence' }
+    ];
+    var experiments = []; // each fails to discriminate, by construction
+    var EXPS = [
+      'Point at the rabbit and say "gavagai?" — native assents.',
+      'Point at a different rabbit — native assents again.',
+      'Point at a rabbit\u2019s ear alone — native assents (parts? or still "rabbit there"?).',
+      'Wait a moment, point at the same rabbit — native assents (same object? new stage?).'
+    ];
+
+    function renderGav() {
+      var pane = refs.gav; LV.clear(pane);
+      // each hypothesis is still alive: ostension can't separate co-extensive schemes
+      GAV.forEach(function (h) {
+        pane.appendChild(el('div.hyp', null,
+          el('div', { style: { flex: '1' } },
+            el('div.h-name', { text: h.name }),
+            el('div.h-desc', { text: h.desc })),
+          el('span.badge.b-warn', { text: 'still compatible' })));
+      });
+      LV.clear(refs.expLog);
+      experiments.forEach(function (e) { refs.expLog.appendChild(el('div', { style: { fontSize: '12px', fontFamily: 'var(--mono)', color: 'var(--muted)', marginBottom: '4px' }, text: '· ' + e })); });
+      if (experiments.length) refs.expLog.appendChild(el('div.badge.b-no', { style: { marginTop: '4px' }, text: 'after ' + experiments.length + ' experiment(s): ' + GAV.length + ' hypotheses survive — translation underdetermined' }));
+    }
+
+    /* ---- grammar induction ---- */
+    function consistent(g) {
+      return pos.every(function (s) { return g.acc(s); }) && neg.every(function (s) { return !g.acc(s); });
+    }
+    function size(g) { return CORP.filter(function (s) { return g.acc(s); }).length; } // language size up to len 6
+
+    function renderGrammar() {
+      // examples
+      LV.clear(refs.posChips); LV.clear(refs.negChips);
+      pos.forEach(function (s, i) { refs.posChips.appendChild(chip(s || 'ε', 'pos', function () { pos.splice(i, 1); renderGrammar(); })); });
+      neg.forEach(function (s, i) { refs.negChips.appendChild(chip(s || 'ε', 'neg', function () { neg.splice(i, 1); renderGrammar(); })); });
+
+      var alive = GRAMMARS.filter(consistent);
+      var minSize = alive.length ? Math.min.apply(null, alive.map(size)) : Infinity;
+
+      LV.clear(refs.hyps);
+      GRAMMARS.forEach(function (g) {
+        var ok = consistent(g), isBest = ok && size(g) === minSize;
+        var row = el('div', { 'class': 'hyp' + (ok ? '' : ' dead') + (isBest ? ' best' : '') },
+          el('div', { style: { flex: '1' } },
+            el('div.h-name', { text: g.name }),
+            el('div.h-desc', { text: g.desc + ' · ' + g.kind })),
+          el('span.muted', { style: { fontFamily: 'var(--mono)', fontSize: '11px' }, text: size(g) + ' strings ≤6' }),
+          el('span', { 'class': 'badge ' + (ok ? (isBest ? 'b-ok' : 'b-info') : 'b-no'), text: ok ? (isBest ? 'subset pick' : 'consistent') : 'refuted' }));
+        refs.hyps.appendChild(row);
+      });
+
+      // verdict
+      LV.clear(refs.verdict);
+      var nAlive = alive.length;
+      var msg, cls;
+      if (nAlive === 0) { msg = 'No candidate grammar fits — the data is contradictory or outside the hypothesis class.'; cls = 'b-no'; }
+      else if (nAlive === 1) { msg = 'Exactly one grammar survives: the language is identified.'; cls = 'b-ok'; }
+      else { msg = nAlive + ' grammars remain consistent. With this data alone the language is NOT determined.'; cls = 'b-warn'; }
+      refs.verdict.appendChild(el('span', { 'class': 'badge ' + cls, text: msg }));
+      var hasNeg = neg.length > 0;
+      refs.verdict.appendChild(el('p.muted', { style: { fontSize: '12.5px', marginTop: '8px' } },
+        hasNeg
+          ? 'Negative examples eliminate the over-general grammars (Σ* in particular). This is why explicit correction is so powerful — and why its scarcity in child language acquisition motivates an innate bias.'
+          : 'Notice that Σ* is never refuted by positive data: no string you can show is outside it. Gold\u2019s theorem says no learner can identify a superfinite class from positive examples alone. To converge, a learner must add a prior — the subset principle (prefer the smallest consistent language), which here is highlighted as the "subset pick". That prior is not read off the data; it is the formal counterpart of Quine\u2019s analytical hypotheses and of Universal Grammar.'));
+    }
+
+    function chip(label, cls, onx) {
+      var c = el('span', { 'class': 'chip ' + cls });
+      c.appendChild(el('span', { text: label }));
+      var x = el('span', { style: { cursor: 'pointer', marginLeft: '6px', opacity: '.6' }, text: '×' }); x.addEventListener('click', onx);
+      c.appendChild(x); return c;
+    }
+
+    /* sample from a hidden target language */
+    function sample(targetName, polarity) {
+      var g = GRAMMARS.find(function (x) { return x.name === targetName; });
+      var pool = CORP.filter(function (s) { return polarity === '+' ? g.acc(s) : !g.acc(s); });
+      // prefer shorter, unseen strings
+      pool.sort(function (a, b) { return a.length - b.length; });
+      pool = pool.filter(function (s) { return pos.indexOf(s) < 0 && neg.indexOf(s) < 0; });
+      if (!pool.length) return;
+      var pick = pool[Math.floor(Math.random() * Math.min(pool.length, 4))];
+      if (polarity === '+') pos.push(pick); else neg.push(pick);
+      renderGrammar();
+    }
+
+    function mount(stage) {
+      LV.clear(stage);
+      stage.appendChild(el('div.module-head', null,
+        el('div.kicker', { text: 'Module V · learning & meaning' }),
+        el('h2', { text: 'Gavagai → full grammar' }),
+        el('p', { text: 'A native says "gavagai" as a rabbit darts past. What does the word mean? Quine\u2019s point is that no amount of pointing settles it. The same underdetermination is provable for grammar: from finitely many example sentences, several grammars always remain consistent. Convergence requires either negative evidence or a built-in inductive bias — the formal shadow of innate structure.' })));
+      var body = el('div.module-body'); stage.appendChild(body);
+
+      // PART 1 — gavagai
+      var p1 = el('div.card', { style: { marginBottom: '22px' } });
+      p1.appendChild(el('h3', { text: '1 · Radical translation — the indeterminacy of reference' }));
+      var scene = el('div.scene');
+      scene.appendChild(el('div', { style: { fontSize: '46px' } }, '🐇'));
+      scene.appendChild(el('div.utterance', { text: '\u201cGavagai!\u201d' }));
+      p1.appendChild(scene);
+      var sp = el('div.split-even', { style: { marginTop: '16px' } });
+      var left = el('div'); left.appendChild(el('h4', { text: 'co-extensive hypotheses' })); refs.gav = el('div'); left.appendChild(refs.gav); sp.appendChild(left);
+      var right = el('div');
+      right.appendChild(el('h4', { text: 'run an experiment' }));
+      var eb = el('button.btn', { text: '👉 point and query' });
+      eb.addEventListener('click', function () { if (experiments.length < EXPS.length) experiments.push(EXPS[experiments.length]); renderGav(); });
+      right.appendChild(eb);
+      refs.expLog = el('div', { style: { marginTop: '10px' } }); right.appendChild(refs.expLog);
+      sp.appendChild(right);
+      p1.appendChild(sp);
+      body.appendChild(p1);
+
+      // PART 2 — grammar induction
+      var p2 = el('div.card');
+      p2.appendChild(el('h3', { text: '2 · From examples to a grammar — identification in the limit' }));
+
+      var ctrls = el('div', { style: { marginBottom: '14px' } });
+      var inputRow = el('div.btn-row');
+      refs.strInput = el('input', { type: 'text', value: 'abab', placeholder: 'string over {a,b}', style: { width: '160px' } });
+      inputRow.appendChild(refs.strInput);
+      var addPos = el('button.btn', { text: '+ positive' }); addPos.addEventListener('click', function () { var s = refs.strInput.value.replace(/[^ab]/g, ''); if (pos.indexOf(s) < 0) pos.push(s); renderGrammar(); });
+      var addNeg = el('button.btn', { text: '− negative' }); addNeg.addEventListener('click', function () { var s = refs.strInput.value.replace(/[^ab]/g, ''); if (neg.indexOf(s) < 0) neg.push(s); renderGrammar(); });
+      inputRow.appendChild(addPos); inputRow.appendChild(addNeg);
+      ctrls.appendChild(inputRow);
+
+      var sampleRow = el('div.btn-row', { style: { marginTop: '10px' } });
+      sampleRow.appendChild(el('label.lab', { text: 'sample from hidden target:' }));
+      ['a*b*', '(ab)*', 'aⁿbⁿ'].forEach(function (tn) {
+        var bp = el('button.btn', { text: tn + ' +' }); bp.addEventListener('click', function () { sample(tn, '+'); });
+        var bn = el('button.btn', { text: tn + ' −' }); bn.addEventListener('click', function () { sample(tn, '-'); });
+        sampleRow.appendChild(bp); sampleRow.appendChild(bn);
+      });
+      var clr = el('button.btn', { text: 'clear' }); clr.addEventListener('click', function () { pos = []; neg = []; renderGrammar(); });
+      sampleRow.appendChild(clr);
+      ctrls.appendChild(sampleRow);
+      p2.appendChild(ctrls);
+
+      var exWrap = el('div.split-even');
+      var pe = el('div'); pe.appendChild(el('h4', { text: 'positive examples (∈ L)' })); refs.posChips = el('div'); pe.appendChild(refs.posChips); exWrap.appendChild(pe);
+      var ne = el('div'); ne.appendChild(el('h4', { text: 'negative examples (∉ L)' })); refs.negChips = el('div'); ne.appendChild(refs.negChips); exWrap.appendChild(ne);
+      p2.appendChild(exWrap);
+
+      p2.appendChild(el('h4', { text: 'hypothesis space', style: { marginTop: '16px' } }));
+      refs.hyps = el('div'); p2.appendChild(refs.hyps);
+      refs.verdict = el('div', { style: { marginTop: '10px' } }); p2.appendChild(refs.verdict);
+      body.appendChild(p2);
+
+      renderGav(); renderGrammar();
+    }
+
+    return { mount: mount };
+  }
+
+  LV.register({ id: 'grammar', no: 'VII', title: 'Gavagai → grammar', sub: 'Indeterminacy · Gold\u2019s theorem', create: mod });
+})();
+
+/* ===== js/app.js ===== */
+/* ===========================================================================
+   app.js — router + overview
+   Builds the sidebar from LV.modules, instantiates a module on demand, and
+   keeps the current view in the URL hash so it survives reload.
+   ========================================================================= */
+(function () {
+  'use strict';
+
+  var el = LV.el;
+  var stage;
+  var instances = {};
+  var navItems = {};
+
+  function overview(target) {
+    LV.clear(target);
+
+    target.appendChild(el('div.module-head', null,
+      el('div.kicker', { text: 'a project in formal epistemology' }),
+      el('h2', { text: 'The Architecture of Rational Belief' }),
+      el('p', { text: 'Seven interactive instruments tracing a single question: how does a rational agent represent, update, and act on structured information under uncertainty — and where does that capacity reach its limit? Each module is live; nothing is pre-rendered.' })
+    ));
+
+    var body = el('div.module-body');
+    target.appendChild(body);
+
+    var prose = el('div.prose');
+    prose.appendChild(el('p', null,
+      el('b', { text: 'The spine. ' }),
+      'We begin with the logic of possibility and knowledge (I), reveal its hidden geometry (II), populate it with many interacting minds (III), turn representation into action (IV), let self-interested agents reach equilibrium (V) and measure the social cost of their selfishness (VI), and finally probe the epistemic boundary — the point at which data can no longer fix meaning or structure (VII). The arc runs from what can be known, through how agents act and interact, to what cannot be inferred at all.'
+    ));
+    body.appendChild(prose);
+
+    var grid = el('div.grid.overview-grid');
+
+    var blurbs = {
+      kripke: 'Possible-worlds semantics. Build a frame, evaluate □ and ◇ world-by-world, and watch the modal axioms K, T, 4, B, 5 correspond to reflexivity, transitivity, symmetry, and the euclidean property.',
+      topology: 'The McKinsey–Tarski theorem: S4 is the logic of topological space, with □ = interior and ◇ = closure. The same logic, now drawn as open sets and boundaries.',
+      agents: 'Multi-agent epistemic logic. Indistinguishability relations, common and distributed knowledge, and public-announcement dynamics — the muddy-children puzzle solved by deleting worlds.',
+      decision: 'Expected-utility theory and the evidential/causal schism, dramatised by Newcomb’s problem and a slider that finds exactly where the two decision theories disagree.',
+      games: 'Strategic-form games and Nash equilibrium. Edit any payoff or load a classic game (Prisoner’s Dilemma, Stag Hunt, Matching Pennies) and watch best responses, pure and mixed equilibria, and dominant strategies recompute.',
+      agt: 'The price of anarchy: how far a selfish equilibrium falls short of the social optimum. Pigou’s 4/3 bound and Braess’s paradox, where adding a road makes every driver slower.',
+      grammar: 'Quine’s gavagai and Gold’s identification in the limit: a proof, made tactile, that finite data underdetermines both reference and grammar — and that learning needs a prior.'
+    };
+
+    LV.modules.forEach(function (m) {
+      var card = el('div.card', { style: { cursor: 'pointer' } });
+
+      card.appendChild(el('div.mono', {
+        style: { fontSize: '11px', color: 'var(--gold)' },
+        text: 'Module ' + m.no
+      }));
+
+      card.appendChild(el('h3', {
+        style: { marginTop: '4px' },
+        text: m.title
+      }));
+
+      card.appendChild(el('p.muted', {
+        style: { fontSize: '13px' },
+        text: blurbs[m.id] || m.sub
+      }));
+
+      card.addEventListener('click', function () {
+        go(m.id);
+      });
+
+      grid.appendChild(card);
+    });
+
+    body.appendChild(grid);
+  }
+
+  function go(id) {
+    Object.keys(navItems).forEach(function (k) {
+      navItems[k].classList.toggle('active', k === id);
+    });
+
+    if (id === 'overview') {
+      overview(stage);
+      location.hash = '';
+      return;
+    }
+
+    var def = LV.modules.find(function (m) {
+      return m.id === id;
+    });
+
+    if (!def) {
+      overview(stage);
+      return;
+    }
+
+    if (!instances[id]) {
+      instances[id] = def.create();
+    }
+
+    instances[id].mount(stage);
+    location.hash = id;
+  }
+
+  function buildNav() {
+    var side = document.getElementById('sidebar');
+    if (!side) return;
+
+    side.innerHTML = '';
+
+    side.appendChild(el('div.brand', null,
+      el('h1', { text: 'Logica Visualis' }),
+      el('div.tag', { text: 'an interactive atlas of formal reasoning' })
+    ));
+
+    var toc = el('div.toc');
+
+    var ov = el('div.nav-item', null,
+      el('div', { style: { display: 'flex', gap: '8px', alignItems: 'baseline' } },
+        el('span.ni-no', { text: '00' }),
+        el('span.ni-title', { text: 'Overview' })
+      ),
+      el('span.ni-sub', { text: 'the through-line' })
+    );
+
+    ov.addEventListener('click', function () {
+      go('overview');
+    });
+
+    navItems.overview = ov;
+    toc.appendChild(ov);
+
+    toc.appendChild(el('div.label', { text: 'modules' }));
+
+    LV.modules.forEach(function (m) {
+      var item = el('div.nav-item', null,
+        el('div', { style: { display: 'flex', gap: '8px', alignItems: 'baseline' } },
+          el('span.ni-no', { text: m.no }),
+          el('span.ni-title', { text: m.title })
+        ),
+        el('span.ni-sub', { text: m.sub })
+      );
+
+      item.addEventListener('click', function () {
+        go(m.id);
+      });
+
+      navItems[m.id] = item;
+      toc.appendChild(item);
+    });
+
+    side.appendChild(toc);
+    side.appendChild(el('div.sidebar-foot', {
+      text: 'v6 · single-file · runs offline'
+    }));
+  }
+
+  function setupMobileMenu() {
+    var menuToggle = document.getElementById('menuToggle');
+    var sidebar = document.getElementById('sidebar');
+    var stageEl = document.getElementById('stage');
+    var BP = 820;
+
+    if (!menuToggle || !sidebar) return;
+
+    function close() { document.body.classList.remove('menu-open'); menuToggle.textContent = '☰'; }
+
+    menuToggle.addEventListener('click', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      var open = document.body.classList.toggle('menu-open');
+      menuToggle.textContent = open ? '✕' : '☰';
+    });
+
+    // tap a nav item -> close
+    sidebar.addEventListener('click', function () {
+      if (window.innerWidth <= BP) close();
+    });
+
+    // tap the dimmed backdrop (the exposed stage) -> close
+    stageEl.addEventListener('click', function () {
+      if (window.innerWidth <= BP && document.body.classList.contains('menu-open')) close();
+    });
+
+    // returning to desktop width -> always reset to the static layout
+    window.addEventListener('resize', function () {
+      if (window.innerWidth > BP) close();
+    });
+  }
+
+  window.addEventListener('DOMContentLoaded', function () {
+    stage = document.getElementById('stage');
+
+    buildNav();
+
+    var start = location.hash.replace('#', '') || 'overview';
+    var exists = LV.modules.find(function (m) {
+      return m.id === start;
+    });
+
+    go(exists ? start : 'overview');
+    setupMobileMenu();
+  });
+})();
+
+  </script>
+</body>
+</html>
