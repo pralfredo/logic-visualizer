@@ -5,6 +5,11 @@ A self-contained web application that turns nine domains of logic, decision, and
 game theory into live, manipulable instruments. **No build step, no server, no
 dependencies.** Open it and it runs — including offline.
 
+---
+### Link to the Website
+https://pralfredo.github.io/logic-visualizer/
+---
+
 > **Two ways to run the exact same app:**
 > - **`logica-visualis.html`** — the entire project (all styles + all nine
 >   modules) inlined into one file. Double-click it, or upload it as `index.html`.
