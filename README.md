@@ -226,11 +226,3 @@ a closed box, malformed `∧I`), each accepted or rejected correctly.
 
 ---
 
-## A note for a viva
-
-The application is a *working argument* rather than a slide deck — each instrument
-verifies its own theory as you manipulate it, and Modules I and II make the
-semantics / proof-theory distinction concrete before any of the applied material.
-The strongest thread to foreground is the correspondence motif above: the same
-idea recurs in nine mathematical costumes, which is exactly why these fields
-illuminate one another.
