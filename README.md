@@ -226,3 +226,12 @@ a closed box, malformed `∧I`), each accepted or rejected correctly.
 
 ---
 
+# Author
+
+Pramithas Upreti
+
+Computer Science • Mathematics • AI & Machine Learning
+
+GitHub: https://github.com/pralfredo
+
+MIT License 2026
